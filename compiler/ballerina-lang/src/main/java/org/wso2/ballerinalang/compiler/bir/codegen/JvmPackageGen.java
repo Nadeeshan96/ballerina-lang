@@ -82,6 +82,7 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.ICONST_0;
 import static org.objectweb.asm.Opcodes.ICONST_1;
@@ -226,7 +227,7 @@ public class JvmPackageGen {
         String varName = globalVar.name.value;
         BType bType = globalVar.type;
         String descriptor = JvmCodeGenUtil.getFieldTypeSignature(bType);
-        FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_STATIC, varName, descriptor, null, null);
+        FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_STATIC + ACC_VOLATILE, varName, descriptor, null, null);
         fv.visitEnd();
     }
 
