@@ -24,7 +24,6 @@ import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.FiniteType;
 import io.ballerina.runtime.api.types.StreamType;
-import io.ballerina.runtime.api.types.TableType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.values.BTypedesc;
 import io.ballerina.runtime.api.values.BValue;
@@ -46,8 +45,6 @@ public class GetElementType {
             return ValueCreator.createTypedescValue(((ArrayType) type).getElementType());
         } else if (type.getTag() == TypeTags.STREAM_TAG) {
             return ValueCreator.createTypedescValue(((StreamType) type).getConstrainedType());
-        } else if (type.getTag() == TypeTags.TABLE_TAG) {
-            return ValueCreator.createTypedescValue(((TableType) type).getConstrainedType());
         } else if (type.getTag() == TypeTags.FINITE_TYPE_TAG && ((FiniteType) type).getValueSpace().size() == 1) {
             return getTypeDescValue(((BValue) (((FiniteType) type).getValueSpace().iterator().next())).getType());
         }
