@@ -340,11 +340,6 @@ public class TypeConverter {
                         convertibleTypes.add(targetType);
                     }
                     break;
-                case TypeTags.TABLE_TAG:
-                    if (isConvertibleToTableType(((BTableType) targetType).getConstrainedType())) {
-                        convertibleTypes.add(targetType);
-                    }
-                    break;
                 case TypeTags.XML_TAG:
                 case TypeTags.XML_ELEMENT_TAG:
                 case TypeTags.XML_COMMENT_TAG:
