@@ -363,12 +363,6 @@ public class TypeConverter {
             return false;
         }
 
-        TypeValuePair typeValuePair = new TypeValuePair(sourceValue, targetType);
-        if (unresolvedValues.contains(typeValuePair)) {
-            return true;
-        }
-        unresolvedValues.add(typeValuePair);
-
         Map<String, Type> targetFieldTypes = new HashMap<>();
         Type restFieldType = targetType.restFieldType;
 
