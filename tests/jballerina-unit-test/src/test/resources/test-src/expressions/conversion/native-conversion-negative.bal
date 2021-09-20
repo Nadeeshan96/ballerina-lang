@@ -237,7 +237,7 @@ function testConvertJsonToNestedRecordsWithErrors() {
         "green": 4
     };
 
-    Factory|error val = trap j.cloneWithType(Factory);
+    Factory|error val = trap j.fromJsonWithType(Factory);
 
     error err = <error> val;
     string errorMsg = "'map<json>' value cannot be converted to 'Factory': " +
