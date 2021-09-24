@@ -38,6 +38,7 @@ import io.ballerina.runtime.api.values.BTypedesc;
 import io.ballerina.runtime.internal.TypeChecker;
 import io.ballerina.runtime.internal.values.MapValueImpl;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -189,7 +190,7 @@ public class ObjectMock {
                         List<Type> memberTypes =
                                 ((UnionType) attachedFunction.getType().getParameters()[i].type).getMemberTypes();
                         for (Type memberType : memberTypes) {
-                            if (TypeChecker.checkIsType(arg, memberType)) {
+                            if (TypeChecker.checkIsType(arg, memberType, new HashSet<>())) {
                                 isTypeAvailable = true;
                                 break;
                             }
@@ -206,7 +207,7 @@ public class ObjectMock {
                                     new MapValueImpl<>(PredefinedTypes.TYPE_ERROR_DETAIL));
                         }
                     } else if (!TypeChecker.checkIsType(it.next(),
-                            attachedFunction.getType().getParameters()[i].type)) {
+                            attachedFunction.getType().getParameters()[i].type, new HashSet<>())) {
                         String detail =
                                 "incorrect type of argument provided at position '" + (i + 1)
                                         + "' to mock the function '" + functionName + "()'";
@@ -344,7 +345,7 @@ public class ObjectMock {
     }
 
     private static boolean validateParameterizedValue(Object returnVal, ParameterizedType functionReturnType) {
-        return TypeChecker.checkIsType(returnVal, functionReturnType.getParamValueType());
+        return TypeChecker.checkIsType(returnVal, functionReturnType.getParamValueType(), new HashSet<>());
     }
 
     private static boolean validateUnionValue(Object returnVal, UnionType functionReturnType) {
@@ -353,7 +354,7 @@ public class ObjectMock {
             if (memberType.getTag() == TypeTags.PARAMETERIZED_TYPE_TAG) {
                 return validateParameterizedValue(returnVal, ((ParameterizedType) memberType));
             } else {
-                if (TypeChecker.checkIsType(returnVal, memberType)) {
+                if (TypeChecker.checkIsType(returnVal, memberType, new HashSet<>())) {
                     return true;
                 }
             }
@@ -410,7 +411,7 @@ public class ObjectMock {
                     case TypeTags.PARAMETERIZED_TYPE_TAG:
                         return validateParameterizedValue(returnVal, (ParameterizedType) functionReturnType);
                     default:
-                        return TypeChecker.checkIsType(returnVal, functionReturnType);
+                        return TypeChecker.checkIsType(returnVal, functionReturnType, new HashSet<>());
                 }
             }
         }
@@ -425,7 +426,7 @@ public class ObjectMock {
      * @return whether the return value is valid
      */
     private static boolean validateFieldValue(Object returnVal, Type fieldType) {
-        return TypeChecker.checkIsType(returnVal, fieldType);
+        return TypeChecker.checkIsType(returnVal, fieldType, new HashSet<>());
     }
 
     /**

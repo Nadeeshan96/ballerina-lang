@@ -29,6 +29,7 @@ import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.XmlNodeType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BValue;
@@ -126,9 +127,13 @@ import static io.ballerina.runtime.api.utils.TypeUtils.isValueType;
 @SuppressWarnings({"rawtypes"})
 public class TypeChecker {
 
+    private static final byte MAX_TYPECAST_ERROR_COUNT = 20;
+
     public static Object checkCast(Object sourceVal, Type targetType) {
 
-        if (checkIsType(sourceVal, targetType)) {
+        Set<String> errors = new HashSet<>();
+
+        if (checkIsType(sourceVal, targetType, errors)) {
             return sourceVal;
         }
 
@@ -149,7 +154,7 @@ public class TypeChecker {
             }
         }
 
-        throw ErrorUtils.createTypeCastError(sourceVal, targetType);
+        throw createTypeCastError(sourceVal, targetType, errors);
     }
 
     public static long anyToInt(Object sourceVal) {
@@ -261,7 +266,7 @@ public class TypeChecker {
      * @param targetType type to be test against
      * @return true if the value belongs to the given type, false otherwise
      */
-    public static boolean checkIsType(Object sourceVal, Type targetType) {
+    public static boolean checkIsType(Object sourceVal, Type targetType, Set<String> errors) {
         return checkIsType(sourceVal, getType(sourceVal), targetType);
     }
 
@@ -827,7 +832,7 @@ public class TypeChecker {
 
     private static boolean isFiniteTypeMatch(BFiniteType sourceType, Type targetType) {
         for (Object bValue : sourceType.valueSpace) {
-            if (!checkIsType(bValue, targetType)) {
+            if (!checkIsType(bValue, targetType, new HashSet<>())) {
                 return false;
             }
         }
@@ -3283,6 +3288,23 @@ public class TypeChecker {
             throw ErrorUtils.createJToBTypeCastError(sourceVal.getClass(), targetType);
         }
         return sourceVal;
+    }
+
+    private static BError createTypeCastError(Object value, Type targetType, Set<String> errorsSet) {
+        if (errorsSet.isEmpty()) {
+            return ErrorUtils.createTypeCastError(value, targetType);
+        } else {
+            List<String> errors = new ArrayList<>(errorsSet);
+            if (errors.size() == MAX_TYPECAST_ERROR_COUNT + 1) {
+                errors.remove(MAX_TYPECAST_ERROR_COUNT);
+                errors.add("...");
+            }
+            StringBuilder errorMsg = new StringBuilder();
+            for (String error : errors) {
+                errorMsg.append("\n\t\t").append(error);
+            }
+            return ErrorUtils.createTypeCastError(value, targetType, errorMsg.toString());
+        }
     }
 
     private TypeChecker() {

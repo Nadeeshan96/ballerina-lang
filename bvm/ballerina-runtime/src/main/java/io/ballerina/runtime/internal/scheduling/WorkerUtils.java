@@ -23,6 +23,8 @@
  import io.ballerina.runtime.internal.values.ErrorValue;
  import io.ballerina.runtime.internal.values.RefValue;
 
+ import java.util.HashSet;
+
  /**
   * Worker related utility methods for jBallerina runtime.
   *
@@ -37,7 +39,7 @@
       * @param channels worker date channels that current worker interacts
       */
      public static void handleWorkerError(RefValue value, Strand strand, ChannelDetails[] channels) {
-         if (TypeChecker.checkIsType(value, PredefinedTypes.TYPE_ERROR)) {
+         if (TypeChecker.checkIsType(value, PredefinedTypes.TYPE_ERROR, new HashSet<>())) {
              strand.handleChannelError(channels, (ErrorValue) value);
          }
      }

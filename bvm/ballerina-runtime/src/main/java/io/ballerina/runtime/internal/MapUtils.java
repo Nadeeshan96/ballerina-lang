@@ -31,6 +31,8 @@ import io.ballerina.runtime.internal.util.exceptions.BLangExceptionHelper;
 import io.ballerina.runtime.internal.util.exceptions.RuntimeErrors;
 import io.ballerina.runtime.internal.values.MapValue;
 
+import java.util.HashSet;
+
 import static io.ballerina.runtime.api.constants.RuntimeConstants.MAP_LANG_LIB;
 import static io.ballerina.runtime.internal.util.exceptions.BallerinaErrorReasons.INHERENT_TYPE_VIOLATION_ERROR_IDENTIFIER;
 import static io.ballerina.runtime.internal.util.exceptions.BallerinaErrorReasons.MAP_KEY_NOT_FOUND_ERROR;
@@ -59,7 +61,7 @@ public class MapUtils {
     }
 
     public static void handleInherentTypeViolatingMapUpdate(Object value, BMapType mapType) {
-        if (TypeChecker.checkIsType(value, mapType.getConstrainedType())) {
+        if (TypeChecker.checkIsType(value, mapType.getConstrainedType(), new HashSet<>())) {
             return;
         }
 
@@ -103,7 +105,7 @@ public class MapUtils {
                                                       RuntimeErrors.INVALID_RECORD_FIELD_ACCESS, fieldName, recType));
         }
 
-        if (TypeChecker.checkIsType(value, recFieldType)) {
+        if (TypeChecker.checkIsType(value, recFieldType, new HashSet<>())) {
             return;
         }
         Type valuesType = TypeChecker.getType(value);

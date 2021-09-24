@@ -36,6 +36,7 @@ import io.ballerina.runtime.internal.util.exceptions.BLangExceptionHelper;
 import io.ballerina.runtime.internal.util.exceptions.RuntimeErrors;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -214,7 +215,7 @@ public abstract class AbstractObjectValue implements ObjectValue {
 
     private void checkFieldUpdateType(String fieldName, Object value) {
         Type fieldType = type.getFields().get(fieldName).getFieldType();
-        if (TypeChecker.checkIsType(value, fieldType)) {
+        if (TypeChecker.checkIsType(value, fieldType, new HashSet<>())) {
             return;
         }
 

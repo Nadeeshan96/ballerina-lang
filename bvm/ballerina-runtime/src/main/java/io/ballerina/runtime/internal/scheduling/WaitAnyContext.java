@@ -20,6 +20,8 @@
  import io.ballerina.runtime.api.PredefinedTypes;
  import io.ballerina.runtime.internal.TypeChecker;
 
+ import java.util.HashSet;
+
  /**
   * WaitContext for Wait for any action.
   *
@@ -39,7 +41,7 @@
 
      @Override
      boolean waitCompleted(Object result) {
-         if (TypeChecker.checkIsType(result, PredefinedTypes.TYPE_ERROR)) {
+         if (TypeChecker.checkIsType(result, PredefinedTypes.TYPE_ERROR, new HashSet<>())) {
              return waitCount.decrementAndGet() == 0;
          }
          return true;

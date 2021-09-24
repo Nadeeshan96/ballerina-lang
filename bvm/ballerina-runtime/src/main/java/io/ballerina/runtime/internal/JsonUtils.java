@@ -52,6 +52,7 @@ import io.ballerina.runtime.internal.values.MappingInitialValueEntry;
 import io.ballerina.runtime.internal.values.RefValue;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -331,7 +332,7 @@ public class JsonUtils {
             case TypeTags.BOOLEAN_TAG:
                 return jsonNodeToBoolean(jsonValue);
             case TypeTags.JSON_TAG:
-                if (jsonValue != null && !TypeChecker.checkIsType(jsonValue, targetType)) {
+                if (jsonValue != null && !TypeChecker.checkIsType(jsonValue, targetType, new HashSet<>())) {
                     throw BLangExceptionHelper.getRuntimeException(RuntimeErrors.INCOMPATIBLE_TYPE, targetType,
                                                                    getTypeName(jsonValue));
                 }

@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -715,7 +716,7 @@ public class TupleValueImpl extends AbstractArrayValue {
             elemType = this.tupleType.getTupleTypes().get((int) index);
         }
 
-        if (!TypeChecker.checkIsType(value, elemType)) {
+        if (!TypeChecker.checkIsType(value, elemType, new HashSet<>())) {
             throw ErrorCreator.createError(
                     getModulePrefixedReason(ARRAY_LANG_LIB, INHERENT_TYPE_VIOLATION_ERROR_IDENTIFIER),
                     BLangExceptionHelper.getErrorMessage(RuntimeErrors.INCOMPATIBLE_TYPE, elemType,

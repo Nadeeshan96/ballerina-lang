@@ -51,6 +51,7 @@ import io.ballerina.runtime.internal.util.exceptions.RuntimeErrors;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -130,7 +131,7 @@ public class CloneWithType {
         }
         // handle primitive values
         if (sourceType.getTag() <= TypeTags.BOOLEAN_TAG) {
-            if (TypeChecker.checkIsType(value, matchingType)) {
+            if (TypeChecker.checkIsType(value, matchingType, new HashSet<>())) {
                 return value;
             } else {
                 // Has to be a numeric conversion.

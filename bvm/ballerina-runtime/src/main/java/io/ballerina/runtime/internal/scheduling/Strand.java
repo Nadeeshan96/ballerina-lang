@@ -305,7 +305,8 @@ public class Strand {
                     if (future.hasWaited()) {
                         waitedCount++;
                     }
-                    boolean isErrorResult = TypeChecker.checkIsType(future.result, PredefinedTypes.TYPE_ERROR);
+                    boolean isErrorResult = TypeChecker.checkIsType(future.result, PredefinedTypes.TYPE_ERROR,
+                            new HashSet<>());
                     if (isErrorResult) {
                         ctx.waitCount.decrementAndGet();
                         // if error, should wait for other futures as well
