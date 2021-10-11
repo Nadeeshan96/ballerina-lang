@@ -11,6 +11,7 @@ module io.ballerina.lang {
     requires io.ballerina.tools.api;
     requires org.apache.commons.compress;
     requires org.apache.commons.io;
+    requires org.apache.commons.lang3;
     requires io.ballerina.toml;
     requires io.ballerina.central.client;
     requires java.semver;
