@@ -185,9 +185,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -266,7 +268,9 @@ public class BIRGen extends BLangNodeVisitor {
         this.env = new BIRGenEnv(birPkg);
         astPkg.accept(this);
 
-        this.birOptimizer.optimizePackage(birPkg);
+        splitLargeFunctions(birPkg);
+
+//        this.birOptimizer.optimizePackage(birPkg);
         if (!astPkg.moduleContextDataHolder.skipTests() && astPkg.hasTestablePackage()) {
             BIRPackage testBirPkg = new BIRPackage(astPkg.pos, astPkg.packageID.orgName, astPkg.packageID.pkgName,
                     astPkg.packageID.name, astPkg.packageID.version, astPkg.packageID.sourceFileName);
@@ -292,6 +296,156 @@ public class BIRGen extends BLangNodeVisitor {
 
         setEntryPoints(astPkg);
         return astPkg;
+    }
+
+    private void splitLargeFunctions(BIRPackage birPkg) {
+        int functionInstructionThreshold = 100;
+        int blockInstructionThreshold = 90;
+
+        final List<BIRFunction> newlyAddedFunctions = new ArrayList<>();
+        for (int funcNum = 0; funcNum < birPkg.functions.size(); funcNum++) {
+            BIRFunction function = birPkg.functions.get(funcNum);
+            int instructionCount = 0;
+            for (BIRBasicBlock basicBlock : function.basicBlocks) {
+                instructionCount += basicBlock.instructions.size();
+            }
+            if (instructionCount < functionInstructionThreshold) {
+                continue;
+            }
+            final List<BIRBasicBlock> newBBList = new ArrayList<>();
+            int newBBNum = function.basicBlocks.size() - 1;
+            for (int bbNum = 0; bbNum < function.basicBlocks.size(); bbNum++) {
+                BIRBasicBlock basicBlock = function.basicBlocks.get(bbNum);
+                if (basicBlock.instructions.size() < blockInstructionThreshold) {
+                    newBBList.add(basicBlock);
+                    continue;
+                }
+                List<Split> possibleSplits = getPossibleSplits(basicBlock.instructions, blockInstructionThreshold);
+                if (!possibleSplits.isEmpty()) {
+                    newBBNum = generateSplitsInBB(birPkg, funcNum, bbNum, possibleSplits, newlyAddedFunctions,
+                            newBBNum, newBBList);
+                } else {
+                    newBBList.add(basicBlock);
+                }
+            }
+            function.basicBlocks = newBBList;
+        }
+        birPkg.functions.addAll(newlyAddedFunctions);
+    }
+
+    private int generateSplitsInBB(BIRPackage birPkg, int funcNum, int bbNum, List<Split> possibleSplits,
+                                   List<BIRFunction> newlyAddedFunctions, int newBBNum, List<BIRBasicBlock> newBBList) {
+        List<BIRNonTerminator> instructionList = birPkg.functions.get(funcNum).basicBlocks.get(bbNum).instructions;
+        String funcName = birPkg.functions.get(funcNum).name.toString();
+        String bbName = birPkg.functions.get(funcNum).basicBlocks.get(bbNum).id.toString();
+        int startInsNum = 0;
+        BIRBasicBlock currentBB = new BIRBasicBlock(new Name("bb" + bbNum));
+
+        for (int splitNum = 0; splitNum < possibleSplits.size(); splitNum++) {
+            Name newFuncName = new Name("$" + funcName + "$" + bbName + "$" + Integer.toString(splitNum + 1));
+            BIROperand currentBBTerminatorLhsOp =
+                    new BIROperand(instructionList.get(possibleSplits.get(splitNum).second).lhsOp.variableDcl);
+            newlyAddedFunctions.add(createNewBIRFunction(birPkg, funcNum, newFuncName,
+                    instructionList.get(possibleSplits.get(splitNum).second),
+                    instructionList.subList(possibleSplits.get(splitNum).first, possibleSplits.get(splitNum).second),
+                    possibleSplits.get(splitNum).lhsVars));
+            birPkg.functions.get(funcNum).localVars.removeAll(possibleSplits.get(splitNum).lhsVars);
+            currentBB.instructions.addAll(instructionList.subList(startInsNum, possibleSplits.get(splitNum).first));
+            startInsNum = possibleSplits.get(splitNum).second + 1;
+            newBBNum += 1;
+            BIRBasicBlock newBB = new BIRBasicBlock(new Name("bb" + newBBNum));
+            currentBB.terminator = new BIRTerminator.Call(instructionList.get(possibleSplits.get(splitNum).second).pos,
+                    InstructionKind.CALL, false, birPkg.packageID, newFuncName, Collections.emptyList(),
+                    currentBBTerminatorLhsOp, newBB, Collections.emptyList(),
+                    Collections.emptySet(), instructionList.get(possibleSplits.get(splitNum).second).scope);
+            newBBList.add(currentBB);
+            currentBB = newBB;
+        }
+        // need to handle the last created BB
+        startInsNum = possibleSplits.get(possibleSplits.size() - 1).second + 1;
+        if (startInsNum < instructionList.size()) {
+            currentBB.instructions.addAll(instructionList.subList(startInsNum, instructionList.size()));
+        }
+        currentBB.terminator = birPkg.functions.get(funcNum).basicBlocks.get(bbNum).terminator;
+        newBBList.add(currentBB);
+        return newBBNum;
+    }
+
+    private List<Split> getPossibleSplits(List<BIRNonTerminator> instructions, int blockInstructionThreshold) {
+        List<Split> possibleSplits = new ArrayList<>();
+        boolean validSplit = true;
+        int splitStartIndex = 0;
+        List<BIRVariableDcl> lhsOperandList = new ArrayList<>();
+        Set<BIROperand> lhsOperandSet = new HashSet<>();
+        for (int insNum = 0; insNum < instructions.size(); insNum++) {
+            BIRNonTerminator instruction = instructions.get(insNum);
+            // we do some operations this one and the one below only if it is a valid split to reduce unnecessary things
+            if (validSplit) {
+                BIROperand[] rhsOperands = instruction.getRhsOperands();
+                for (BIROperand rhsOperand : rhsOperands) {
+                    if (!lhsOperandSet.contains(rhsOperand)) {
+                        // it's not okay
+                        validSplit = false;
+                        break;
+                    }
+                }
+            }
+
+            BIROperand lhsOp = instruction.lhsOp;
+            if (lhsOp.variableDcl.kind == VarKind.TEMP || lhsOp.variableDcl.kind == VarKind.SYNTHETIC ||
+                    lhsOp.variableDcl.kind == VarKind.SELF) {
+                if (validSplit) {
+                    lhsOperandSet.add(lhsOp);
+                    lhsOperandList.add(lhsOp.variableDcl);
+                }
+                if (insNum == instructions.size()) {
+                    // this temp ins is the last ins
+                    if (validSplit && (insNum - splitStartIndex >= blockInstructionThreshold)) {
+                        possibleSplits.add(new Split(splitStartIndex, insNum, lhsOperandList));
+                    }
+                }
+            } else {
+                // this means var like local var is now found
+                if (validSplit && (insNum - splitStartIndex >= blockInstructionThreshold)) {
+                    possibleSplits.add(new Split(splitStartIndex, insNum, lhsOperandList));
+                }
+                splitStartIndex = insNum + 1;
+                validSplit = true;
+                lhsOperandSet = new HashSet<>();
+                lhsOperandList = new ArrayList<>();
+                }
+        }
+        return possibleSplits;
+    }
+
+    private BIRFunction createNewBIRFunction(BIRPackage birPkg, int funcNum, Name funcName,
+                                             BIRNonTerminator currentIns, List<BIRNonTerminator> collectedIns,
+                                             List<BIRVariableDcl> lhsOperandList) {
+        BIRFunction parentFunc = birPkg.functions.get(funcNum);
+        BType retType = currentIns.lhsOp.variableDcl.type;
+        BInvokableType type = new BInvokableType(new ArrayList<>(), retType, null);
+
+        BIRFunction birFunc = new BIRFunction(currentIns.pos, funcName, funcName, parentFunc.flags, type,
+                parentFunc.workerName, 0, parentFunc.origin);
+        birFunc.argsCount = 0;
+        birFunc.returnVariable = new BIRVariableDcl(currentIns.pos, retType, new Name("%0"),
+                VarScope.FUNCTION, VarKind.RETURN, null);
+        birFunc.localVars.add(0, birFunc.returnVariable);
+        birFunc.localVars.addAll(lhsOperandList);
+
+        //creates 2 bbs
+        BIRBasicBlock entryBB = new BIRBasicBlock(new Name("bb0"));
+        entryBB.instructions.addAll(collectedIns);
+        BIRNonTerminator lastInstruction = currentIns;
+        lastInstruction.lhsOp = new BIROperand(birFunc.returnVariable);
+        entryBB.instructions.add(lastInstruction);
+        BIRBasicBlock exitBB = new BIRBasicBlock(new Name("bb1"));
+        exitBB.terminator = new BIRTerminator.Return(null);
+        entryBB.terminator = new BIRTerminator.GOTO(null, exitBB, currentIns.scope);
+        birFunc.basicBlocks = new ArrayList<>();
+        birFunc.basicBlocks.add(entryBB);
+        birFunc.basicBlocks.add(exitBB);
+        return birFunc;
     }
 
     private void setEntryPoints(BLangPackage pkgNode) {

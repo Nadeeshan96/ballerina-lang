@@ -102,3 +102,14 @@ class BIRGenEnv {
         this.enclFunc = null;
     }
 }
+
+class Split {
+    int first;
+    int second;
+    List<BIRVariableDcl> lhsVars;
+    public Split(int first, int second, List<BIRVariableDcl> lhsVars) {
+        this.first = first;
+        this.second = second;
+        this.lhsVars = lhsVars;
+    }
+}
