@@ -104,13 +104,13 @@ class BIRGenEnv {
 }
 
 class Split {
-    int first;
-    int second;
+    int firstIns;
+    int lastIns;
     List<BIRVariableDcl> lhsVars;
     List<BIRVariableDcl> funcArgs;
-    public Split(int first, int second, List<BIRVariableDcl> lhsVars, List<BIRVariableDcl> funcArgs) {
-        this.first = first;
-        this.second = second;
+    public Split(int firstIns, int lastIns, List<BIRVariableDcl> lhsVars, List<BIRVariableDcl> funcArgs) {
+        this.firstIns = firstIns;
+        this.lastIns = lastIns;
         this.lhsVars = lhsVars;
         this.funcArgs = funcArgs;
     }

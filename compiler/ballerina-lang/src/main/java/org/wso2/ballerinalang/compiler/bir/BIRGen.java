@@ -344,29 +344,30 @@ public class BIRGen extends BLangNodeVisitor {
         for (int splitNum = 0; splitNum < possibleSplits.size(); splitNum++) {
             Name newFuncName = new Name("$" + funcName + "$" + bbName + "$" + Integer.toString(splitNum + 1));
             BIROperand currentBBTerminatorLhsOp =
-                    new BIROperand(instructionList.get(possibleSplits.get(splitNum).second).lhsOp.variableDcl);
+                    new BIROperand(instructionList.get(possibleSplits.get(splitNum).lastIns).lhsOp.variableDcl);
             newlyAddedFunctions.add(createNewBIRFunction(birPkg, funcNum, newFuncName,
-                    instructionList.get(possibleSplits.get(splitNum).second),
-                    instructionList.subList(possibleSplits.get(splitNum).first, possibleSplits.get(splitNum).second),
-                    possibleSplits.get(splitNum).lhsVars, possibleSplits.get(splitNum).funcArgs));
+                    instructionList.get(possibleSplits.get(splitNum).lastIns),
+                    instructionList.subList(possibleSplits.get(splitNum).firstIns,
+                            possibleSplits.get(splitNum).lastIns), possibleSplits.get(splitNum).lhsVars,
+                    possibleSplits.get(splitNum).funcArgs));
             birPkg.functions.get(funcNum).localVars.removeAll(possibleSplits.get(splitNum).lhsVars);
-            currentBB.instructions.addAll(instructionList.subList(startInsNum, possibleSplits.get(splitNum).first));
-            startInsNum = possibleSplits.get(splitNum).second + 1;
+            currentBB.instructions.addAll(instructionList.subList(startInsNum, possibleSplits.get(splitNum).firstIns));
+            startInsNum = possibleSplits.get(splitNum).lastIns + 1;
             newBBNum += 1;
             BIRBasicBlock newBB = new BIRBasicBlock(new Name("bb" + newBBNum));
             List<BIRArgument> args = new ArrayList<>();
             for (BIRVariableDcl funcArg : possibleSplits.get(splitNum).funcArgs) {
                 args.add(new BIRArgument(ArgumentState.PROVIDED, funcArg));
             }
-            currentBB.terminator = new BIRTerminator.Call(instructionList.get(possibleSplits.get(splitNum).second).pos,
+            currentBB.terminator = new BIRTerminator.Call(instructionList.get(possibleSplits.get(splitNum).lastIns).pos,
                     InstructionKind.CALL, false, birPkg.packageID, newFuncName, args, currentBBTerminatorLhsOp,
                     newBB, Collections.emptyList(), Collections.emptySet(),
-                    instructionList.get(possibleSplits.get(splitNum).second).scope);
+                    instructionList.get(possibleSplits.get(splitNum).lastIns).scope);
             newBBList.add(currentBB);
             currentBB = newBB;
         }
         // need to handle the last created BB
-        startInsNum = possibleSplits.get(possibleSplits.size() - 1).second + 1;
+        startInsNum = possibleSplits.get(possibleSplits.size() - 1).lastIns + 1;
         if (startInsNum < instructionList.size()) {
             currentBB.instructions.addAll(instructionList.subList(startInsNum, instructionList.size()));
         }
