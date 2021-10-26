@@ -348,16 +348,20 @@ public class BIRGen extends BLangNodeVisitor {
             newlyAddedFunctions.add(createNewBIRFunction(birPkg, funcNum, newFuncName,
                     instructionList.get(possibleSplits.get(splitNum).second),
                     instructionList.subList(possibleSplits.get(splitNum).first, possibleSplits.get(splitNum).second),
-                    possibleSplits.get(splitNum).lhsVars));
+                    possibleSplits.get(splitNum).lhsVars, possibleSplits.get(splitNum).funcArgs));
             birPkg.functions.get(funcNum).localVars.removeAll(possibleSplits.get(splitNum).lhsVars);
             currentBB.instructions.addAll(instructionList.subList(startInsNum, possibleSplits.get(splitNum).first));
             startInsNum = possibleSplits.get(splitNum).second + 1;
             newBBNum += 1;
             BIRBasicBlock newBB = new BIRBasicBlock(new Name("bb" + newBBNum));
+            List<BIRArgument> args = new ArrayList<>();
+            for (BIRVariableDcl funcArg : possibleSplits.get(splitNum).funcArgs) {
+                args.add(new BIRArgument(ArgumentState.PROVIDED, funcArg));
+            }
             currentBB.terminator = new BIRTerminator.Call(instructionList.get(possibleSplits.get(splitNum).second).pos,
-                    InstructionKind.CALL, false, birPkg.packageID, newFuncName, Collections.emptyList(),
-                    currentBBTerminatorLhsOp, newBB, Collections.emptyList(),
-                    Collections.emptySet(), instructionList.get(possibleSplits.get(splitNum).second).scope);
+                    InstructionKind.CALL, false, birPkg.packageID, newFuncName, args, currentBBTerminatorLhsOp,
+                    newBB, Collections.emptyList(), Collections.emptySet(),
+                    instructionList.get(possibleSplits.get(splitNum).second).scope);
             newBBList.add(currentBB);
             currentBB = newBB;
         }
@@ -373,6 +377,8 @@ public class BIRGen extends BLangNodeVisitor {
 
     private List<Split> getPossibleSplits(List<BIRNonTerminator> instructions, int blockInstructionThreshold) {
         List<Split> possibleSplits = new ArrayList<>();
+        List<BIRVariableDcl> newFuncArgs = new ArrayList<>();
+        int maxFuncArgs = 250;
         boolean validSplit = true;
         int splitStartIndex = 0;
         List<BIRVariableDcl> lhsOperandList = new ArrayList<>();
@@ -384,9 +390,12 @@ public class BIRGen extends BLangNodeVisitor {
                 BIROperand[] rhsOperands = instruction.getRhsOperands();
                 for (BIROperand rhsOperand : rhsOperands) {
                     if (!lhsOperandSet.contains(rhsOperand)) {
-                        // it's not okay
-                        validSplit = false;
-                        break;
+                        if (newFuncArgs.size() < maxFuncArgs) {
+                            newFuncArgs.add(rhsOperand.variableDcl);
+                        } else {
+                            validSplit = false;
+                            break;
+                        }
                     }
                 }
             }
@@ -400,19 +409,18 @@ public class BIRGen extends BLangNodeVisitor {
                 }
                 if (insNum == instructions.size()) {
                     // this temp ins is the last ins
-                    if (validSplit && (insNum - splitStartIndex >= blockInstructionThreshold)) {
-                        possibleSplits.add(new Split(splitStartIndex, insNum, lhsOperandList));
-                    }
+                    validSplit = false;
                 }
             } else {
                 // this means var like local var is now found
                 if (validSplit && (insNum - splitStartIndex >= blockInstructionThreshold)) {
-                    possibleSplits.add(new Split(splitStartIndex, insNum, lhsOperandList));
+                    possibleSplits.add(new Split(splitStartIndex, insNum, lhsOperandList, newFuncArgs));
                 }
                 splitStartIndex = insNum + 1;
                 validSplit = true;
                 lhsOperandSet = new HashSet<>();
                 lhsOperandList = new ArrayList<>();
+                newFuncArgs = new ArrayList<>();
                 }
         }
         return possibleSplits;
@@ -420,17 +428,34 @@ public class BIRGen extends BLangNodeVisitor {
 
     private BIRFunction createNewBIRFunction(BIRPackage birPkg, int funcNum, Name funcName,
                                              BIRNonTerminator currentIns, List<BIRNonTerminator> collectedIns,
-                                             List<BIRVariableDcl> lhsOperandList) {
+                                             List<BIRVariableDcl> lhsOperandList, List<BIRVariableDcl> funcArgs) {
         BIRFunction parentFunc = birPkg.functions.get(funcNum);
         BType retType = currentIns.lhsOp.variableDcl.type;
-        BInvokableType type = new BInvokableType(new ArrayList<>(), retType, null);
+        List<BType> paramTypes = new ArrayList<>();
+
+        for (BIRVariableDcl funcArg : funcArgs) {
+            paramTypes.add(funcArg.type);
+        }
+        BInvokableType type = new BInvokableType(paramTypes, retType, null);
 
         BIRFunction birFunc = new BIRFunction(currentIns.pos, funcName, funcName, parentFunc.flags, type,
                 parentFunc.workerName, 0, parentFunc.origin);
-        birFunc.argsCount = 0;
+
+        List<BIRFunctionParameter> functionParams = new ArrayList<>();
+        for (BIRVariableDcl funcArg : funcArgs) {
+            Name argName = funcArg.name;
+            birFunc.requiredParams.add(new BIRParameter(currentIns.pos, argName, 0));
+            BIRFunctionParameter funcParameter = new BIRFunctionParameter(currentIns.pos, funcArg.type, argName,
+                    VarScope.FUNCTION, VarKind.ARG, argName.getValue(), false);
+            functionParams.add(funcParameter);
+            birFunc.parameters.put(funcParameter, new ArrayList<>());
+        }
+
+        birFunc.argsCount = funcArgs.size();
         birFunc.returnVariable = new BIRVariableDcl(currentIns.pos, retType, new Name("%0"),
                 VarScope.FUNCTION, VarKind.RETURN, null);
         birFunc.localVars.add(0, birFunc.returnVariable);
+        birFunc.localVars.addAll(functionParams);
         birFunc.localVars.addAll(lhsOperandList);
 
         //creates 2 bbs

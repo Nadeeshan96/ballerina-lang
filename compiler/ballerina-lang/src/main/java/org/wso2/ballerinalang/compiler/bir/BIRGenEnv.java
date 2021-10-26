@@ -107,9 +107,11 @@ class Split {
     int first;
     int second;
     List<BIRVariableDcl> lhsVars;
-    public Split(int first, int second, List<BIRVariableDcl> lhsVars) {
+    List<BIRVariableDcl> funcArgs;
+    public Split(int first, int second, List<BIRVariableDcl> lhsVars, List<BIRVariableDcl> funcArgs) {
         this.first = first;
         this.second = second;
         this.lhsVars = lhsVars;
+        this.funcArgs = funcArgs;
     }
 }
