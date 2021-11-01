@@ -561,9 +561,11 @@ public class BIRGen extends BLangNodeVisitor {
             BIRBasicBlock basicBlock = basicBlocks.get(bbNum);
             BIRTerminator bbTerminator = basicBlock.terminator;
             if (splitStarted) {
-                neededOperands.remove(bbTerminator.lhsOp);
+                if (bbTerminator.lhsOp != null) {
+                    neededOperands.remove(bbTerminator.lhsOp);
+                    lhsOperandList.add(bbTerminator.lhsOp.variableDcl);
+                }
                 BIROperand[] rhsOperands = bbTerminator.getRhsOperands();
-                lhsOperandList.add(bbTerminator.lhsOp.variableDcl);
                 for (BIROperand rhsOperand : rhsOperands) {
                     neededOperands.add(rhsOperand);
                 }
@@ -596,8 +598,22 @@ public class BIRGen extends BLangNodeVisitor {
                         }
 
                     } else {
-                        // write for new structure
-                        continue;
+                        // write for new structure - both looks same remove this if cond
+                        // but if you need the type in split add it here
+                        if (currIns.lhsOp == splitStartOperand) {
+                            if ((neededOperands.size() > maxFuncArgs) ||
+                                    (lhsOperandList.size() < splitInstructionThreshold)) {
+                                splitStarted = false;
+                                continue;
+                            }
+                            newFuncArgs = new ArrayList<>();
+                            for (BIROperand funcArg : neededOperands) {
+                                newFuncArgs.add(funcArg.variableDcl);
+                            }
+                            possibleSplits.add(new Split(insNum, splitEndInsIndex, bbNum, splitEndBBIndex,
+                                    lhsOperandList, newFuncArgs));
+                            splitStarted = false;
+                        }
                     }
                 } else {
                     if (currIns.kind == InstructionKind.NEW_ARRAY) {
@@ -610,7 +626,16 @@ public class BIRGen extends BLangNodeVisitor {
                         splitEndInsIndex = insNum;
                         splitEndBBIndex = bbNum;
                     } else if (currIns.kind == InstructionKind.NEW_STRUCTURE) {
+                        splitStarted = true;
                         splitTypeArray = false;
+                        BIRNonTerminator.NewStructure structureIns = (BIRNonTerminator.NewStructure) currIns;
+                        // here and above can use getRHSOperands to fill neededOperands
+                        // currently I will skip adding initial values as anyway it will work but check later
+                        neededOperands = new HashSet<>();
+                        lhsOperandList = new ArrayList<>();
+                        splitStartOperand = structureIns.rhsOp;
+                        splitEndInsIndex = insNum;
+                        splitEndBBIndex = bbNum;
                     } else {
                         continue;
                     }
