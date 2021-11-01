@@ -214,7 +214,15 @@ public abstract class BIRNonTerminator extends BIRAbstractInstruction implements
 
         @Override
         public BIROperand[] getRhsOperands() {
-            return new BIROperand[]{rhsOp};
+            BIROperand[] operands = new BIROperand[2 * (initialValues.size()) + 1];
+            int i = 0;
+            operands[i++] = rhsOp;
+            for (BIRMappingConstructorEntry mappingEntry : initialValues) {
+                BIRMappingConstructorKeyValueEntry keyValueEntry = (BIRMappingConstructorKeyValueEntry) mappingEntry;
+                operands[i++] = keyValueEntry.keyOp;
+                operands[i++] = keyValueEntry.valueOp;
+            }
+            return operands;
         }
     }
 
