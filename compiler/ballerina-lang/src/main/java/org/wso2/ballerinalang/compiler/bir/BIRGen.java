@@ -268,9 +268,9 @@ public class BIRGen extends BLangNodeVisitor {
         this.env = new BIRGenEnv(birPkg);
         astPkg.accept(this);
 
+        this.birOptimizer.optimizePackage(birPkg);
         splitLargeFunctions(birPkg);
 
-//        this.birOptimizer.optimizePackage(birPkg);
         if (!astPkg.moduleContextDataHolder.skipTests() && astPkg.hasTestablePackage()) {
             BIRPackage testBirPkg = new BIRPackage(astPkg.pos, astPkg.packageID.orgName, astPkg.packageID.pkgName,
                     astPkg.packageID.name, astPkg.packageID.version, astPkg.packageID.sourceFileName);
@@ -423,7 +423,7 @@ public class BIRGen extends BLangNodeVisitor {
             BIROperand newCurrentBBTerminatorLhsOp = new BIROperand(lastInstruction.lhsOp.variableDcl);
             BIRFunction newBIRFunc = createNewBIRFuncAcrossBB(birPkg, funcNum, newFuncName, currSplit, newBBNum);
             newlyAddedFunctions.add(newBIRFunc);
-            function.localVars.removeAll(currSplit.lhsVars);
+//            function.localVars.removeAll(currSplit.lhsVars); // now as it after optimizer can't remove
             startInsNum = currSplit.lastIns + 1;
             newBBNum += 1;
             BIRBasicBlock newBB = new BIRBasicBlock(new Name("bb" + newBBNum));
@@ -473,7 +473,7 @@ public class BIRGen extends BLangNodeVisitor {
                 VarScope.FUNCTION, VarKind.RETURN, null);
         birFunc.localVars.add(0, birFunc.returnVariable);
         birFunc.localVars.addAll(functionParams);
-        birFunc.localVars.addAll(currSplit.lhsVars);
+        birFunc.localVars.addAll(new HashSet<>(currSplit.lhsVars));
 
         //creates bbs
         // first bb
@@ -523,7 +523,7 @@ public class BIRGen extends BLangNodeVisitor {
                     instructionList.subList(possibleSplits.get(splitNum).firstIns,
                             possibleSplits.get(splitNum).lastIns), possibleSplits.get(splitNum).lhsVars,
                     possibleSplits.get(splitNum).funcArgs));
-            birPkg.functions.get(funcNum).localVars.removeAll(possibleSplits.get(splitNum).lhsVars);
+//            birPkg.functions.get(funcNum).localVars.removeAll(possibleSplits.get(splitNum).lhsVars); // cuz after opt
             currentBB.instructions.addAll(instructionList.subList(startInsNum, possibleSplits.get(splitNum).firstIns));
             startInsNum = possibleSplits.get(splitNum).lastIns + 1;
             newBBNum += 1;
@@ -620,7 +620,11 @@ public class BIRGen extends BLangNodeVisitor {
                         splitStarted = true;
                         splitTypeArray = true;
                         BIRNonTerminator.NewArray arrayIns = (BIRNonTerminator.NewArray) currIns;
-                        neededOperands = new HashSet<>(arrayIns.values);
+                        neededOperands = new HashSet<>();
+                        BIROperand[] initialRhsOperands = currIns.getRhsOperands();
+                        for (BIROperand rhsOperand : initialRhsOperands) {
+                            neededOperands.add(rhsOperand);
+                        }
                         lhsOperandList = new ArrayList<>();
                         splitStartOperand = arrayIns.sizeOp;
                         splitEndInsIndex = insNum;
@@ -632,6 +636,10 @@ public class BIRGen extends BLangNodeVisitor {
                         // here and above can use getRHSOperands to fill neededOperands
                         // currently I will skip adding initial values as anyway it will work but check later
                         neededOperands = new HashSet<>();
+                        BIROperand[] initialRhsOperands = currIns.getRhsOperands();
+                        for (BIROperand rhsOperand : initialRhsOperands) {
+                            neededOperands.add(rhsOperand);
+                        }
                         lhsOperandList = new ArrayList<>();
                         splitStartOperand = structureIns.rhsOp;
                         splitEndInsIndex = insNum;
@@ -677,7 +685,7 @@ public class BIRGen extends BLangNodeVisitor {
                 VarScope.FUNCTION, VarKind.RETURN, null);
         birFunc.localVars.add(0, birFunc.returnVariable);
         birFunc.localVars.addAll(functionParams);
-        birFunc.localVars.addAll(lhsOperandList);
+        birFunc.localVars.addAll(new HashSet<>(lhsOperandList));
 
         //creates 2 bbs
         BIRBasicBlock entryBB = new BIRBasicBlock(new Name("bb0"));
