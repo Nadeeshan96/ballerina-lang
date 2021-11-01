@@ -300,7 +300,6 @@ public class BIRGen extends BLangNodeVisitor {
 
     private void splitLargeFunctions(BIRPackage birPkg) {
         int functionInstructionThreshold = 100;
-        int blockInstructionThreshold = 90;
 
         final List<BIRFunction> newlyAddedFunctions = new ArrayList<>();
         for (int funcNum = 0; funcNum < birPkg.functions.size(); funcNum++) {
@@ -312,40 +311,214 @@ public class BIRGen extends BLangNodeVisitor {
             if (instructionCount < functionInstructionThreshold) {
                 continue;
             }
-            final List<BIRBasicBlock> newBBList = new ArrayList<>();
-            int newBBNum = function.basicBlocks.size() - 1;
-            for (int bbNum = 0; bbNum < function.basicBlocks.size(); bbNum++) {
-                BIRBasicBlock basicBlock = function.basicBlocks.get(bbNum);
-                if (basicBlock.instructions.size() < blockInstructionThreshold) {
-                    newBBList.add(basicBlock);
-                    continue;
-                }
-                List<Split> possibleSplits = getPossibleSplits(basicBlock.instructions, blockInstructionThreshold);
-                if (!possibleSplits.isEmpty()) {
-                    newBBNum = generateSplitsInBB(birPkg, funcNum, bbNum, possibleSplits, newlyAddedFunctions,
-                            newBBNum, newBBList);
-                } else {
-                    newBBList.add(basicBlock);
-                }
+
+            List<Split> possibleSplits = getPossibleSplits(function.basicBlocks);
+
+            if (!possibleSplits.isEmpty()) {
+                generateSplits(birPkg, funcNum, possibleSplits, newlyAddedFunctions);
             }
-            function.basicBlocks = newBBList;
         }
         birPkg.functions.addAll(newlyAddedFunctions);
     }
 
-    private int generateSplitsInBB(BIRPackage birPkg, int funcNum, int bbNum, List<Split> possibleSplits,
-                                   List<BIRFunction> newlyAddedFunctions, int newBBNum, List<BIRBasicBlock> newBBList) {
+    private void generateSplits(BIRPackage birPkg, int funcNum, List<Split> possibleSplits,
+                               List<BIRFunction> newlyAddedFunctions) {
+
+        int splitNum = 0; //nextsplit or the current split in
+
+        BIRFunction function = birPkg.functions.get(funcNum);
+        String funcName = function.name.toString();
+        List<BIRBasicBlock> basicBlocks = function.basicBlocks;
+        List<BIRBasicBlock> newBBList = new ArrayList<>();
+        int startInsNum = 0;
+        int bbNum = 0;
+        int newBBNum = basicBlocks.size();
+        int newFuncNum = 0; // hence newFuncNum are as 1,2,3,..
+        BIRBasicBlock currentBB  = new BIRBasicBlock(new Name("bb" + bbNum));;
+
+        // i also want to check whether any splits are remaining and if no just fill the ins
+        while (bbNum < basicBlocks.size()) {
+            // so at the loop beginning it is either the start of a new BB or after jumping from a BB
+            if (startInsNum == 0) {
+                if (splitNum >= possibleSplits.size()) {
+                    // if there are no more splits just copy the rem BBs and break
+                    for (; bbNum < basicBlocks.size(); bbNum++) {
+                        newBBList.add(basicBlocks.get(bbNum));
+                    }
+                    break;
+                } else if (bbNum < possibleSplits.get(splitNum).startBBNum) {
+                    // can just copy the bbs till a bb where a split starts
+                    for (; bbNum < possibleSplits.get(splitNum).startBBNum; bbNum++) {
+                        newBBList.add(basicBlocks.get(bbNum));
+                    }
+                    currentBB = new BIRBasicBlock(new Name("bb" + bbNum));
+                    continue;
+                }
+            } else if (splitNum >= possibleSplits.size()) {
+                //came from a jump - if there are no more splits can do the rem instructions in the bb and
+                // continue to next bb
+                // put remaning ins in the current BB
+                if (startInsNum < basicBlocks.get(bbNum).instructions.size()) {
+                    currentBB.instructions.addAll(basicBlocks.get(bbNum).instructions.subList(startInsNum,
+                            basicBlocks.get(bbNum).instructions.size()));
+                }
+                currentBB.terminator = basicBlocks.get(bbNum).terminator;
+                newBBList.add(currentBB);
+                startInsNum = 0;
+                bbNum += 1;
+                continue;
+                // do not need to create new BB because after BBs will be just copied
+
+            }
+
+            // now there a split in the BB : either after a jump or from the beginning
+
+            //now handle the splits in the same BB
+            // here I get a list of splits starting from this BB and ends in this BB
+            // so after creating splits have to handle the last ins in the BB/ a jump to another BB
+            List<Split> splitsInSameBBList = new ArrayList<>();
+            while (splitNum < possibleSplits.size()) {
+                if (possibleSplits.get(splitNum).endBBNum == bbNum) {
+                    splitsInSameBBList.add(possibleSplits.get(splitNum));
+                    splitNum++;
+                } else {
+                    break;
+                }
+            }
+            // so the next splitNum contains a split which may start from this BB or another BB, but do not end inThisBB
+            if (!splitsInSameBBList.isEmpty()) {
+                // need to pass current unfinished BB
+                currentBB = generateSplitsInSameBB(birPkg, funcNum, bbNum, splitsInSameBBList,
+                        newlyAddedFunctions, newBBNum, newBBList, newFuncNum, startInsNum, currentBB);
+                startInsNum = possibleSplits.get(splitNum - 1).lastIns + 1;
+            }
+
+            // here i handle if splits are over or the next spilt is in another BB
+            if ((splitNum >= possibleSplits.size()) || (possibleSplits.get(splitNum).startBBNum > bbNum)) {
+                if (startInsNum < basicBlocks.get(bbNum).instructions.size()) {
+                    currentBB.instructions.addAll(basicBlocks.get(bbNum).instructions.subList(startInsNum,
+                            basicBlocks.get(bbNum).instructions.size()));
+                }
+                currentBB.terminator = basicBlocks.get(bbNum).terminator;
+                newBBList.add(currentBB);
+                startInsNum = 0;
+                bbNum += 1;
+                continue;
+            }
+
+            // now we have a split that go to another function
+            // now need to add ins then create a function and but next bbNum as its terminator
+            if (startInsNum < possibleSplits.get(splitNum).firstIns) {
+                currentBB.instructions.addAll(basicBlocks.get(bbNum).instructions.subList(startInsNum,
+                        possibleSplits.get(splitNum).firstIns));
+            }
+
+             // this BB terminator is a func call pointing to end BB of the split
+
+            newFuncNum += 1;
+            Name newFuncName = new Name("$" + funcName + "$" + newFuncNum);
+            Split currSplit = possibleSplits.get(splitNum);
+            splitNum += 1;
+            BIRNonTerminator lastInstruction = basicBlocks.get(currSplit.endBBNum).instructions.get(currSplit.lastIns);
+            BIROperand newCurrentBBTerminatorLhsOp = new BIROperand(lastInstruction.lhsOp.variableDcl);
+            BIRFunction newBIRFunc = createNewBIRFuncAcrossBB(birPkg, funcNum, newFuncName, currSplit, newBBNum);
+            newlyAddedFunctions.add(newBIRFunc);
+            function.localVars.removeAll(currSplit.lhsVars);
+            startInsNum = currSplit.lastIns + 1;
+            newBBNum += 1;
+            BIRBasicBlock newBB = new BIRBasicBlock(new Name("bb" + newBBNum));
+            List<BIRArgument> args = new ArrayList<>();
+            for (BIRVariableDcl funcArg : currSplit.funcArgs) {
+                args.add(new BIRArgument(ArgumentState.PROVIDED, funcArg));
+            }
+            currentBB.terminator = new BIRTerminator.Call(lastInstruction.pos, InstructionKind.CALL, false,
+                    birPkg.packageID, newFuncName, args, newCurrentBBTerminatorLhsOp, newBB, Collections.emptyList(),
+                    Collections.emptySet(), lastInstruction.scope);
+            newBBList.add(currentBB);
+
+            currentBB = newBB;
+            bbNum = currSplit.endBBNum;
+        }
+        function.basicBlocks = newBBList;
+    }
+
+    private BIRFunction createNewBIRFuncAcrossBB(BIRPackage birPkg, int funcNum, Name funcName, Split currSplit,
+                                                 int newBBNum) {
+        BIRFunction parentFunc = birPkg.functions.get(funcNum);
+        List<BIRBasicBlock> parentFuncBBs = parentFunc.basicBlocks;
+        BIRNonTerminator lastIns = parentFuncBBs.get(currSplit.endBBNum).instructions.get(currSplit.lastIns);
+        BType retType = lastIns.lhsOp.variableDcl.type;
+        List<BType> paramTypes = new ArrayList<>();
+
+        for (BIRVariableDcl funcArg : currSplit.funcArgs) {
+            paramTypes.add(funcArg.type);
+        }
+        BInvokableType type = new BInvokableType(paramTypes, retType, null);
+
+        BIRFunction birFunc = new BIRFunction(lastIns.pos, funcName, funcName, parentFunc.flags, type,
+                parentFunc.workerName, 0, parentFunc.origin);
+
+        List<BIRFunctionParameter> functionParams = new ArrayList<>();
+        for (BIRVariableDcl funcArg : currSplit.funcArgs) {
+            Name argName = funcArg.name;
+            birFunc.requiredParams.add(new BIRParameter(lastIns.pos, argName, 0));
+            BIRFunctionParameter funcParameter = new BIRFunctionParameter(lastIns.pos, funcArg.type, argName,
+                    VarScope.FUNCTION, VarKind.ARG, argName.getValue(), false);
+            functionParams.add(funcParameter);
+            birFunc.parameters.put(funcParameter, new ArrayList<>());
+        }
+
+        birFunc.argsCount = currSplit.funcArgs.size();
+        birFunc.returnVariable = new BIRVariableDcl(lastIns.pos, retType, new Name("%0"),
+                VarScope.FUNCTION, VarKind.RETURN, null);
+        birFunc.localVars.add(0, birFunc.returnVariable);
+        birFunc.localVars.addAll(functionParams);
+        birFunc.localVars.addAll(currSplit.lhsVars);
+
+        //creates bbs
+        // first bb
+        BIRBasicBlock entryBB = new BIRBasicBlock(new Name("bb0"));
+        if (currSplit.firstIns < parentFuncBBs.get(currSplit.startBBNum).instructions.size()) {
+            entryBB.instructions.addAll(parentFuncBBs.get(currSplit.startBBNum).instructions.subList(
+                    currSplit.firstIns, parentFuncBBs.get(currSplit.startBBNum).instructions.size()));
+        }
+        entryBB.terminator = parentFuncBBs.get(currSplit.startBBNum).terminator;
+        birFunc.basicBlocks.add(entryBB);
+
+        // copying bbs between first and last bb
+        for (int bbNum = currSplit.startBBNum + 1; bbNum < currSplit.endBBNum; bbNum++) {
+            birFunc.basicBlocks.add(parentFuncBBs.get(bbNum));
+        }
+
+        // now need to create last bb and return bb (exit bb)
+        BIRBasicBlock lastBB = new BIRBasicBlock(new Name("bb" + currSplit.endBBNum));
+        if (0 <= currSplit.lastIns) {
+            lastBB.instructions.addAll(parentFuncBBs.get(currSplit.endBBNum).instructions.subList(
+                    0, currSplit.lastIns + 1));
+        }
+        lastBB.instructions.get(currSplit.lastIns).lhsOp = new BIROperand(birFunc.returnVariable);
+
+        // newBBNum is used to create the return statement
+        BIRBasicBlock exitBB = new BIRBasicBlock(new Name("bb" + newBBNum));
+        exitBB.terminator = new BIRTerminator.Return(null);
+        lastBB.terminator = new BIRTerminator.GOTO(null, exitBB, lastIns.scope);
+        birFunc.basicBlocks.add(lastBB);
+        birFunc.basicBlocks.add(exitBB);
+        return birFunc;
+    }
+
+    private BIRBasicBlock generateSplitsInSameBB(BIRPackage birPkg, int funcNum, int bbNum, List<Split> possibleSplits,
+                                   List<BIRFunction> newlyAddedFunctions, int newBBNum, List<BIRBasicBlock> newBBList,
+                                                 int newFuncNum, int startInsNum, BIRBasicBlock currentBB) {
         List<BIRNonTerminator> instructionList = birPkg.functions.get(funcNum).basicBlocks.get(bbNum).instructions;
         String funcName = birPkg.functions.get(funcNum).name.toString();
-        String bbName = birPkg.functions.get(funcNum).basicBlocks.get(bbNum).id.toString();
-        int startInsNum = 0;
-        BIRBasicBlock currentBB = new BIRBasicBlock(new Name("bb" + bbNum));
 
         for (int splitNum = 0; splitNum < possibleSplits.size(); splitNum++) {
-            Name newFuncName = new Name("$" + funcName + "$" + bbName + "$" + Integer.toString(splitNum + 1));
+            newFuncNum += 1;
+            Name newFuncName = new Name("$" + funcName + "$" + newFuncNum);
             BIROperand currentBBTerminatorLhsOp =
                     new BIROperand(instructionList.get(possibleSplits.get(splitNum).lastIns).lhsOp.variableDcl);
-            newlyAddedFunctions.add(createNewBIRFunction(birPkg, funcNum, newFuncName,
+            newlyAddedFunctions.add(createNewBIRFunctionForSameBB(birPkg, funcNum, newFuncName,
                     instructionList.get(possibleSplits.get(splitNum).lastIns),
                     instructionList.subList(possibleSplits.get(splitNum).firstIns,
                             possibleSplits.get(splitNum).lastIns), possibleSplits.get(splitNum).lhsVars,
@@ -366,68 +539,90 @@ public class BIRGen extends BLangNodeVisitor {
             newBBList.add(currentBB);
             currentBB = newBB;
         }
-        // need to handle the last created BB
-        startInsNum = possibleSplits.get(possibleSplits.size() - 1).lastIns + 1;
-        if (startInsNum < instructionList.size()) {
-            currentBB.instructions.addAll(instructionList.subList(startInsNum, instructionList.size()));
-        }
-        currentBB.terminator = birPkg.functions.get(funcNum).basicBlocks.get(bbNum).terminator;
-        newBBList.add(currentBB);
-        return newBBNum;
+        // need to handle the last created BB done outside the dunction
+        return currentBB;
     }
 
-    private List<Split> getPossibleSplits(List<BIRNonTerminator> instructions, int blockInstructionThreshold) {
+
+    private List<Split> getPossibleSplits(List<BIRBasicBlock> basicBlocks) {
         List<Split> possibleSplits = new ArrayList<>();
-        List<BIRVariableDcl> newFuncArgs = new ArrayList<>();
+        List<BIRVariableDcl> newFuncArgs;
         int maxFuncArgs = 250;
-        boolean validSplit = true;
-        int splitStartIndex = 0;
+        int splitInstructionThreshold = 90;
+        int splitEndBBIndex = basicBlocks.size() - 1;
+        int splitEndInsIndex = basicBlocks.get(splitEndBBIndex).instructions.size() - 1;
+        boolean splitStarted = false;
+        boolean splitTypeArray = true;
+        Set<BIROperand> neededOperands = new HashSet<>();
         List<BIRVariableDcl> lhsOperandList = new ArrayList<>();
-        Set<BIROperand> lhsOperandSet = new HashSet<>();
-        for (int insNum = 0; insNum < instructions.size(); insNum++) {
-            BIRNonTerminator instruction = instructions.get(insNum);
-            // we do some operations this one and the one below only if it is a valid split to reduce unnecessary things
-            if (validSplit) {
-                BIROperand[] rhsOperands = instruction.getRhsOperands();
+        BIROperand splitStartOperand = null;
+
+        for (int bbNum = basicBlocks.size() - 1; bbNum >= 0; bbNum--) {
+            BIRBasicBlock basicBlock = basicBlocks.get(bbNum);
+            BIRTerminator bbTerminator = basicBlock.terminator;
+            if (splitStarted) {
+                neededOperands.remove(bbTerminator.lhsOp);
+                BIROperand[] rhsOperands = bbTerminator.getRhsOperands();
+                lhsOperandList.add(bbTerminator.lhsOp.variableDcl);
                 for (BIROperand rhsOperand : rhsOperands) {
-                    if (!lhsOperandSet.contains(rhsOperand)) {
-                        if (newFuncArgs.size() < maxFuncArgs) {
-                            newFuncArgs.add(rhsOperand.variableDcl);
-                        } else {
-                            validSplit = false;
-                            break;
-                        }
-                    }
+                    neededOperands.add(rhsOperand);
                 }
             }
+            List<BIRNonTerminator> instructions = basicBlock.instructions;
+            for (int insNum = instructions.size() - 1; insNum >= 0; insNum--) {
+                BIRNonTerminator currIns = instructions.get(insNum);
+                if (splitStarted) {
+                    neededOperands.remove(currIns.lhsOp);
+                    BIROperand[] rhsOperands = currIns.getRhsOperands();
+                    lhsOperandList.add(currIns.lhsOp.variableDcl);
+                    for (BIROperand rhsOperand : rhsOperands) {
+                        neededOperands.add(rhsOperand);
+                    }
+                    // now check for termination of split, ie: split start
+                    if (splitTypeArray) {
+                        if (currIns.lhsOp == splitStartOperand) {
+                            if ((neededOperands.size() > maxFuncArgs) ||
+                                    (lhsOperandList.size() < splitInstructionThreshold)) {
+                                splitStarted = false;
+                                continue;
+                            }
+                            newFuncArgs = new ArrayList<>();
+                            for (BIROperand funcArg : neededOperands) {
+                                newFuncArgs.add(funcArg.variableDcl);
+                            }
+                            possibleSplits.add(new Split(insNum, splitEndInsIndex, bbNum, splitEndBBIndex,
+                                    lhsOperandList, newFuncArgs));
+                            splitStarted = false;
+                        }
 
-            BIROperand lhsOp = instruction.lhsOp;
-            if (lhsOp.variableDcl.kind == VarKind.TEMP || lhsOp.variableDcl.kind == VarKind.SYNTHETIC ||
-                    lhsOp.variableDcl.kind == VarKind.SELF) {
-                if (validSplit) {
-                    lhsOperandSet.add(lhsOp);
-                    lhsOperandList.add(lhsOp.variableDcl);
+                    } else {
+                        // write for new structure
+                        continue;
+                    }
+                } else {
+                    if (currIns.kind == InstructionKind.NEW_ARRAY) {
+                        splitStarted = true;
+                        splitTypeArray = true;
+                        BIRNonTerminator.NewArray arrayIns = (BIRNonTerminator.NewArray) currIns;
+                        neededOperands = new HashSet<>(arrayIns.values);
+                        lhsOperandList = new ArrayList<>();
+                        splitStartOperand = arrayIns.sizeOp;
+                        splitEndInsIndex = insNum;
+                        splitEndBBIndex = bbNum;
+                    } else if (currIns.kind == InstructionKind.NEW_STRUCTURE) {
+                        splitTypeArray = false;
+                    } else {
+                        continue;
+                    }
                 }
-                if (insNum == instructions.size()) {
-                    // this temp ins is the last ins
-                    validSplit = false;
-                }
-            } else {
-                // this means var like local var is now found
-                if (validSplit && (insNum - splitStartIndex >= blockInstructionThreshold)) {
-                    possibleSplits.add(new Split(splitStartIndex, insNum, lhsOperandList, newFuncArgs));
-                }
-                splitStartIndex = insNum + 1;
-                validSplit = true;
-                lhsOperandSet = new HashSet<>();
-                lhsOperandList = new ArrayList<>();
-                newFuncArgs = new ArrayList<>();
-                }
+
+            }
         }
+        Collections.reverse(possibleSplits);
         return possibleSplits;
     }
 
-    private BIRFunction createNewBIRFunction(BIRPackage birPkg, int funcNum, Name funcName,
+    private BIRFunction createNewBIRFunctionForSameBB(BIRPackage birPkg, int funcNum, Name funcName,
                                              BIRNonTerminator currentIns, List<BIRNonTerminator> collectedIns,
                                              List<BIRVariableDcl> lhsOperandList, List<BIRVariableDcl> funcArgs) {
         BIRFunction parentFunc = birPkg.functions.get(funcNum);
@@ -468,7 +663,6 @@ public class BIRGen extends BLangNodeVisitor {
         BIRBasicBlock exitBB = new BIRBasicBlock(new Name("bb1"));
         exitBB.terminator = new BIRTerminator.Return(null);
         entryBB.terminator = new BIRTerminator.GOTO(null, exitBB, currentIns.scope);
-        birFunc.basicBlocks = new ArrayList<>();
         birFunc.basicBlocks.add(entryBB);
         birFunc.basicBlocks.add(exitBB);
         return birFunc;
