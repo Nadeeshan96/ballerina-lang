@@ -299,7 +299,7 @@ public class BIRGen extends BLangNodeVisitor {
     }
 
     private void splitLargeFunctions(BIRPackage birPkg) {
-        int functionInstructionThreshold = 100;
+        int functionInstructionThreshold = 10;
 
         final List<BIRFunction> newlyAddedFunctions = new ArrayList<>();
         for (int funcNum = 0; funcNum < birPkg.functions.size(); funcNum++) {
@@ -332,7 +332,7 @@ public class BIRGen extends BLangNodeVisitor {
         List<BIRBasicBlock> newBBList = new ArrayList<>();
         int startInsNum = 0;
         int bbNum = 0;
-        int newBBNum = basicBlocks.size();
+        int newBBNum = basicBlocks.size() - 1; // always add 1 and use for safety
         int newFuncNum = 0; // hence newFuncNum are as 1,2,3,..
         BIRBasicBlock currentBB  = new BIRBasicBlock(new Name("bb" + bbNum));;
 
@@ -391,6 +391,8 @@ public class BIRGen extends BLangNodeVisitor {
                 currentBB = generateSplitsInSameBB(birPkg, funcNum, bbNum, splitsInSameBBList,
                         newlyAddedFunctions, newBBNum, newBBList, newFuncNum, startInsNum, currentBB);
                 startInsNum = possibleSplits.get(splitNum - 1).lastIns + 1;
+                newFuncNum += splitsInSameBBList.size();
+                newBBNum += splitsInSameBBList.size();
             }
 
             // here i handle if splits are over or the next spilt is in another BB
@@ -403,6 +405,7 @@ public class BIRGen extends BLangNodeVisitor {
                 newBBList.add(currentBB);
                 startInsNum = 0;
                 bbNum += 1;
+                currentBB = new BIRBasicBlock(new Name("bb" + bbNum));
                 continue;
             }
 
@@ -422,6 +425,8 @@ public class BIRGen extends BLangNodeVisitor {
             BIRNonTerminator lastInstruction = basicBlocks.get(currSplit.endBBNum).instructions.get(currSplit.lastIns);
             BIROperand newCurrentBBTerminatorLhsOp = new BIROperand(lastInstruction.lhsOp.variableDcl);
             BIRFunction newBIRFunc = createNewBIRFuncAcrossBB(birPkg, funcNum, newFuncName, currSplit, newBBNum);
+            newBBNum += 1;
+
             newlyAddedFunctions.add(newBIRFunc);
 //            function.localVars.removeAll(currSplit.lhsVars); // now as it after optimizer can't remove
             startInsNum = currSplit.lastIns + 1;
@@ -499,6 +504,7 @@ public class BIRGen extends BLangNodeVisitor {
         lastBB.instructions.get(currSplit.lastIns).lhsOp = new BIROperand(birFunc.returnVariable);
 
         // newBBNum is used to create the return statement
+        newBBNum += 1;
         BIRBasicBlock exitBB = new BIRBasicBlock(new Name("bb" + newBBNum));
         exitBB.terminator = new BIRTerminator.Return(null);
         lastBB.terminator = new BIRTerminator.GOTO(null, exitBB, lastIns.scope);
@@ -548,7 +554,7 @@ public class BIRGen extends BLangNodeVisitor {
         List<Split> possibleSplits = new ArrayList<>();
         List<BIRVariableDcl> newFuncArgs;
         int maxFuncArgs = 250;
-        int splitInstructionThreshold = 90;
+        int splitInstructionThreshold = 8;
         int splitEndBBIndex = basicBlocks.size() - 1;
         int splitEndInsIndex = basicBlocks.get(splitEndBBIndex).instructions.size() - 1;
         boolean splitStarted = false;
@@ -564,6 +570,9 @@ public class BIRGen extends BLangNodeVisitor {
                 if (bbTerminator.lhsOp != null) {
                     neededOperands.remove(bbTerminator.lhsOp);
                     lhsOperandList.add(bbTerminator.lhsOp.variableDcl);
+                    if (bbTerminator.lhsOp.variableDcl.kind == VarKind.RETURN) {
+                        splitStarted = false;
+                    }
                 }
                 BIROperand[] rhsOperands = bbTerminator.getRhsOperands();
                 for (BIROperand rhsOperand : rhsOperands) {
@@ -573,6 +582,10 @@ public class BIRGen extends BLangNodeVisitor {
             List<BIRNonTerminator> instructions = basicBlock.instructions;
             for (int insNum = instructions.size() - 1; insNum >= 0; insNum--) {
                 BIRNonTerminator currIns = instructions.get(insNum);
+                if (splitStarted && (currIns.lhsOp.variableDcl.kind == VarKind.RETURN)) {
+                    // if the return var is assigned value inside split, it is not valid
+                    splitStarted = false;
+                }
                 if (splitStarted) {
                     neededOperands.remove(currIns.lhsOp);
                     BIROperand[] rhsOperands = currIns.getRhsOperands();
