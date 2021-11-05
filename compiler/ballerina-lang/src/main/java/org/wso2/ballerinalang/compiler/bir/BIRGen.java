@@ -559,7 +559,7 @@ public class BIRGen extends BLangNodeVisitor {
         int splitEndInsIndex = basicBlocks.get(splitEndBBIndex).instructions.size() - 1;
         boolean splitStarted = false;
         boolean splitTypeArray = true;
-        Set<BIROperand> neededOperands = new HashSet<>();
+        Set<BIRVariableDcl> neededOperandsVarDcl = new HashSet<>();
         List<BIRVariableDcl> lhsOperandList = new ArrayList<>();
         BIROperand splitStartOperand = null;
 
@@ -568,7 +568,7 @@ public class BIRGen extends BLangNodeVisitor {
             BIRTerminator bbTerminator = basicBlock.terminator;
             if (splitStarted) {
                 if (bbTerminator.lhsOp != null) {
-                    neededOperands.remove(bbTerminator.lhsOp);
+                    neededOperandsVarDcl.remove(bbTerminator.lhsOp.variableDcl);
                     lhsOperandList.add(bbTerminator.lhsOp.variableDcl);
                     if (bbTerminator.lhsOp.variableDcl.kind == VarKind.RETURN) {
                         splitStarted = false;
@@ -576,7 +576,7 @@ public class BIRGen extends BLangNodeVisitor {
                 }
                 BIROperand[] rhsOperands = bbTerminator.getRhsOperands();
                 for (BIROperand rhsOperand : rhsOperands) {
-                    neededOperands.add(rhsOperand);
+                    neededOperandsVarDcl.add(rhsOperand.variableDcl);
                 }
             }
             List<BIRNonTerminator> instructions = basicBlock.instructions;
@@ -587,23 +587,23 @@ public class BIRGen extends BLangNodeVisitor {
                     splitStarted = false;
                 }
                 if (splitStarted) {
-                    neededOperands.remove(currIns.lhsOp);
+                    neededOperandsVarDcl.remove(currIns.lhsOp.variableDcl);
                     BIROperand[] rhsOperands = currIns.getRhsOperands();
                     lhsOperandList.add(currIns.lhsOp.variableDcl);
                     for (BIROperand rhsOperand : rhsOperands) {
-                        neededOperands.add(rhsOperand);
+                        neededOperandsVarDcl.add(rhsOperand.variableDcl);
                     }
                     // now check for termination of split, ie: split start
                     if (splitTypeArray) {
                         if (currIns.lhsOp == splitStartOperand) {
-                            if ((neededOperands.size() > maxFuncArgs) ||
+                            if ((neededOperandsVarDcl.size() > maxFuncArgs) ||
                                     (lhsOperandList.size() < splitInstructionThreshold)) {
                                 splitStarted = false;
                                 continue;
                             }
                             newFuncArgs = new ArrayList<>();
-                            for (BIROperand funcArg : neededOperands) {
-                                newFuncArgs.add(funcArg.variableDcl);
+                            for (BIRVariableDcl funcArgVarDcl : neededOperandsVarDcl) {
+                                newFuncArgs.add(funcArgVarDcl);
                             }
                             possibleSplits.add(new Split(insNum, splitEndInsIndex, bbNum, splitEndBBIndex,
                                     lhsOperandList, newFuncArgs));
@@ -614,14 +614,14 @@ public class BIRGen extends BLangNodeVisitor {
                         // write for new structure - both looks same remove this if cond
                         // but if you need the type in split add it here
                         if (currIns.lhsOp == splitStartOperand) {
-                            if ((neededOperands.size() > maxFuncArgs) ||
+                            if ((neededOperandsVarDcl.size() > maxFuncArgs) ||
                                     (lhsOperandList.size() < splitInstructionThreshold)) {
                                 splitStarted = false;
                                 continue;
                             }
                             newFuncArgs = new ArrayList<>();
-                            for (BIROperand funcArg : neededOperands) {
-                                newFuncArgs.add(funcArg.variableDcl);
+                            for (BIRVariableDcl funcArgVarDcl : neededOperandsVarDcl) {
+                                newFuncArgs.add(funcArgVarDcl);
                             }
                             possibleSplits.add(new Split(insNum, splitEndInsIndex, bbNum, splitEndBBIndex,
                                     lhsOperandList, newFuncArgs));
@@ -633,10 +633,10 @@ public class BIRGen extends BLangNodeVisitor {
                         splitStarted = true;
                         splitTypeArray = true;
                         BIRNonTerminator.NewArray arrayIns = (BIRNonTerminator.NewArray) currIns;
-                        neededOperands = new HashSet<>();
+                        neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
-                            neededOperands.add(rhsOperand);
+                            neededOperandsVarDcl.add(rhsOperand.variableDcl);
                         }
                         lhsOperandList = new ArrayList<>();
                         splitStartOperand = arrayIns.sizeOp;
@@ -648,10 +648,10 @@ public class BIRGen extends BLangNodeVisitor {
                         BIRNonTerminator.NewStructure structureIns = (BIRNonTerminator.NewStructure) currIns;
                         // here and above can use getRHSOperands to fill neededOperands
                         // currently I will skip adding initial values as anyway it will work but check later
-                        neededOperands = new HashSet<>();
+                        neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
-                            neededOperands.add(rhsOperand);
+                            neededOperandsVarDcl.add(rhsOperand.variableDcl);
                         }
                         lhsOperandList = new ArrayList<>();
                         splitStartOperand = structureIns.rhsOp;
