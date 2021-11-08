@@ -419,7 +419,7 @@ public class BIRGen extends BLangNodeVisitor {
              // this BB terminator is a func call pointing to end BB of the split
 
             newFuncNum += 1;
-            Name newFuncName = new Name("$" + funcName + "$" + newFuncNum);
+            Name newFuncName = new Name("$split$" + funcName + "$" + newFuncNum);
             Split currSplit = possibleSplits.get(splitNum);
             splitNum += 1;
             BIRNonTerminator lastInstruction = basicBlocks.get(currSplit.endBBNum).instructions.get(currSplit.lastIns);
@@ -521,7 +521,7 @@ public class BIRGen extends BLangNodeVisitor {
 
         for (int splitNum = 0; splitNum < possibleSplits.size(); splitNum++) {
             newFuncNum += 1;
-            Name newFuncName = new Name("$" + funcName + "$" + newFuncNum);
+            Name newFuncName = new Name("$split$" + funcName + "$" + newFuncNum);
             BIROperand currentBBTerminatorLhsOp =
                     new BIROperand(instructionList.get(possibleSplits.get(splitNum).lastIns).lhsOp.variableDcl);
             newlyAddedFunctions.add(createNewBIRFunctionForSameBB(birPkg, funcNum, newFuncName,

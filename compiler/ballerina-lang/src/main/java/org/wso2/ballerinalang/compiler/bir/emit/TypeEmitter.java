@@ -140,7 +140,8 @@ class TypeEmitter {
             case TypeTags.STREAM:
                 return emitBStreamType((BStreamType) bType, tabs);
             default:
-                throw new IllegalStateException("Invalid type");
+//                throw new IllegalStateException("Invalid type");
+                return bType.toString();
         }
     }
 
