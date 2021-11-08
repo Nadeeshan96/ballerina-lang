@@ -576,7 +576,9 @@ public class BIRGen extends BLangNodeVisitor {
                 }
                 BIROperand[] rhsOperands = bbTerminator.getRhsOperands();
                 for (BIROperand rhsOperand : rhsOperands) {
-                    neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                    if (!rhsOperand.variableDcl.ignoreVariable) {
+                        neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                    }
                 }
             }
             List<BIRNonTerminator> instructions = basicBlock.instructions;
@@ -591,7 +593,9 @@ public class BIRGen extends BLangNodeVisitor {
                     BIROperand[] rhsOperands = currIns.getRhsOperands();
                     lhsOperandList.add(currIns.lhsOp.variableDcl);
                     for (BIROperand rhsOperand : rhsOperands) {
-                        neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                        if (!rhsOperand.variableDcl.ignoreVariable) {
+                            neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                        }
                     }
                     // now check for termination of split, ie: split start
                     if (splitTypeArray) {
@@ -636,7 +640,9 @@ public class BIRGen extends BLangNodeVisitor {
                         neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
-                            neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                            if (!rhsOperand.variableDcl.ignoreVariable) {
+                                neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                            }
                         }
                         lhsOperandList = new ArrayList<>();
                         splitStartOperand = arrayIns.sizeOp;
@@ -651,7 +657,9 @@ public class BIRGen extends BLangNodeVisitor {
                         neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
-                            neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                            if (!rhsOperand.variableDcl.ignoreVariable) {
+                                neededOperandsVarDcl.add(rhsOperand.variableDcl);
+                            }
                         }
                         lhsOperandList = new ArrayList<>();
                         splitStartOperand = structureIns.rhsOp;
