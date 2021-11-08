@@ -299,7 +299,7 @@ public class BIRGen extends BLangNodeVisitor {
     }
 
     private void splitLargeFunctions(BIRPackage birPkg) {
-        int functionInstructionThreshold = 10;
+        int functionInstructionThreshold = 5;
 
         final List<BIRFunction> newlyAddedFunctions = new ArrayList<>();
         for (int funcNum = 0; funcNum < birPkg.functions.size(); funcNum++) {
@@ -563,7 +563,7 @@ public class BIRGen extends BLangNodeVisitor {
         List<Split> possibleSplits = new ArrayList<>();
         List<BIRVariableDcl> newFuncArgs;
         int maxFuncArgs = 250;
-        int splitInstructionThreshold = 8;
+        int splitInstructionThreshold = 4;
         int splitEndBBIndex = basicBlocks.size() - 1;
         int splitEndInsIndex = basicBlocks.get(splitEndBBIndex).instructions.size() - 1;
         boolean splitStarted = false;
