@@ -321,6 +321,14 @@ public class BIRGen extends BLangNodeVisitor {
         birPkg.functions.addAll(newlyAddedFunctions);
     }
 
+    private int getBbIdNum(List<BIRBasicBlock> bbList, int bbIndex) {
+        try {
+            return Integer.parseInt(bbList.get(bbIndex).toString().substring(2));
+        } catch (NumberFormatException e) {
+            return bbList.size() - 1;
+        }
+    }
+
     private void generateSplits(BIRPackage birPkg, int funcNum, List<Split> possibleSplits,
                                List<BIRFunction> newlyAddedFunctions) {
 
@@ -332,9 +340,10 @@ public class BIRGen extends BLangNodeVisitor {
         List<BIRBasicBlock> newBBList = new ArrayList<>();
         int startInsNum = 0;
         int bbNum = 0;
-        int newBBNum = basicBlocks.size() - 1; // always add 1 and use for safety
+        // newBBNum have last created BB number so always add 1 and use (for safety)
+        int newBBNum = getBbIdNum(basicBlocks, basicBlocks.size() - 1);
         int newFuncNum = 0; // hence newFuncNum are as 1,2,3,..
-        BIRBasicBlock currentBB  = new BIRBasicBlock(new Name("bb" + bbNum));;
+        BIRBasicBlock currentBB  = new BIRBasicBlock(new Name("bb" + getBbIdNum(basicBlocks, bbNum)));;
 
         // i also want to check whether any splits are remaining and if no just fill the ins
         while (bbNum < basicBlocks.size()) {
@@ -351,7 +360,7 @@ public class BIRGen extends BLangNodeVisitor {
                     for (; bbNum < possibleSplits.get(splitNum).startBBNum; bbNum++) {
                         newBBList.add(basicBlocks.get(bbNum));
                     }
-                    currentBB = new BIRBasicBlock(new Name("bb" + bbNum));
+                    currentBB = new BIRBasicBlock(new Name("bb" + getBbIdNum(basicBlocks, bbNum)));
                     continue;
                 }
             } else if (splitNum >= possibleSplits.size()) {
@@ -405,7 +414,7 @@ public class BIRGen extends BLangNodeVisitor {
                 newBBList.add(currentBB);
                 startInsNum = 0;
                 bbNum += 1;
-                currentBB = new BIRBasicBlock(new Name("bb" + bbNum));
+                currentBB = new BIRBasicBlock(new Name("bb" + getBbIdNum(basicBlocks, bbNum)));
                 continue;
             }
 
@@ -496,7 +505,7 @@ public class BIRGen extends BLangNodeVisitor {
         }
 
         // now need to create last bb and return bb (exit bb)
-        BIRBasicBlock lastBB = new BIRBasicBlock(new Name("bb" + currSplit.endBBNum));
+        BIRBasicBlock lastBB = new BIRBasicBlock(new Name("bb" + getBbIdNum(parentFuncBBs, currSplit.endBBNum)));
         if (0 <= currSplit.lastIns) {
             lastBB.instructions.addAll(parentFuncBBs.get(currSplit.endBBNum).instructions.subList(
                     0, currSplit.lastIns + 1));
