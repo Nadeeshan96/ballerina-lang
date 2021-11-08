@@ -101,4 +101,8 @@ class BIRGenEnv {
         this.returnBB = null;
         this.enclFunc = null;
     }
+
+    void resetBBId() {
+        this.currentBBId = -1;
+    }
 }

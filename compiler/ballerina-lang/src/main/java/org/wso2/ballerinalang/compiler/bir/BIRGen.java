@@ -688,6 +688,7 @@ public class BIRGen extends BLangNodeVisitor {
             return;
         }
 
+        this.env.resetBBId();
         // Create the entry basic block
         BIRBasicBlock entryBB = new BIRBasicBlock(this.env.nextBBId(names));
         this.env.enclBasicBlocks = birFunc.basicBlocks;
