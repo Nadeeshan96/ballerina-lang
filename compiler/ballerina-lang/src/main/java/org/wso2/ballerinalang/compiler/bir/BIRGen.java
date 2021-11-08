@@ -301,7 +301,6 @@ public class BIRGen extends BLangNodeVisitor {
     private void splitLargeFunctions(BIRPackage birPkg) {
         int functionInstructionThreshold = 5;
 
-        final List<BIRFunction> newlyAddedFunctions = new ArrayList<>();
         for (int funcNum = 0; funcNum < birPkg.functions.size(); funcNum++) {
             BIRFunction function = birPkg.functions.get(funcNum);
             int instructionCount = 0;
@@ -315,10 +314,11 @@ public class BIRGen extends BLangNodeVisitor {
             List<Split> possibleSplits = getPossibleSplits(function.basicBlocks);
 
             if (!possibleSplits.isEmpty()) {
+                final List<BIRFunction> newlyAddedFunctions = new ArrayList<>();
                 generateSplits(birPkg, funcNum, possibleSplits, newlyAddedFunctions);
+                birPkg.functions.addAll(newlyAddedFunctions);
             }
         }
-        birPkg.functions.addAll(newlyAddedFunctions);
     }
 
     private int getBbIdNum(List<BIRBasicBlock> bbList, int bbIndex) {
@@ -643,9 +643,14 @@ public class BIRGen extends BLangNodeVisitor {
                     }
                 } else {
                     if (currIns.kind == InstructionKind.NEW_ARRAY) {
+                        BIRNonTerminator.NewArray arrayIns = (BIRNonTerminator.NewArray) currIns;
+                        splitStartOperand = arrayIns.sizeOp;
+                        if ((bbNum == basicBlocks.size() - 2) && (!basicBlocks.get(0).instructions.isEmpty()) &&
+                                (basicBlocks.get(0).instructions.get(0).lhsOp == splitStartOperand)) {
+                            continue;
+                        }
                         splitStarted = true;
                         splitTypeArray = true;
-                        BIRNonTerminator.NewArray arrayIns = (BIRNonTerminator.NewArray) currIns;
                         neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
@@ -654,15 +659,17 @@ public class BIRGen extends BLangNodeVisitor {
                             }
                         }
                         lhsOperandList = new ArrayList<>();
-                        splitStartOperand = arrayIns.sizeOp;
                         splitEndInsIndex = insNum;
                         splitEndBBIndex = bbNum;
                     } else if (currIns.kind == InstructionKind.NEW_STRUCTURE) {
+                        BIRNonTerminator.NewStructure structureIns = (BIRNonTerminator.NewStructure) currIns;
+                        splitStartOperand = structureIns.rhsOp;
+                        if ((bbNum == basicBlocks.size() - 2) && (!basicBlocks.get(0).instructions.isEmpty()) &&
+                                (basicBlocks.get(0).instructions.get(0).lhsOp == splitStartOperand)) {
+                            continue;
+                        }
                         splitStarted = true;
                         splitTypeArray = false;
-                        BIRNonTerminator.NewStructure structureIns = (BIRNonTerminator.NewStructure) currIns;
-                        // here and above can use getRHSOperands to fill neededOperands
-                        // currently I will skip adding initial values as anyway it will work but check later
                         neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
@@ -671,7 +678,6 @@ public class BIRGen extends BLangNodeVisitor {
                             }
                         }
                         lhsOperandList = new ArrayList<>();
-                        splitStartOperand = structureIns.rhsOp;
                         splitEndInsIndex = insNum;
                         splitEndBBIndex = bbNum;
                     } else {
