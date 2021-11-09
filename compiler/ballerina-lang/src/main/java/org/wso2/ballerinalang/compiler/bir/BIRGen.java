@@ -469,7 +469,7 @@ public class BIRGen extends BLangNodeVisitor {
         }
         BInvokableType type = new BInvokableType(paramTypes, retType, null);
 
-        BIRFunction birFunc = new BIRFunction(lastIns.pos, funcName, funcName, parentFunc.flags, type,
+        BIRFunction birFunc = new BIRFunction(parentFunc.pos, funcName, funcName, parentFunc.flags, type,
                 parentFunc.workerName, 0, parentFunc.origin);
 
         List<BIRFunctionParameter> functionParams = new ArrayList<>();
@@ -703,7 +703,7 @@ public class BIRGen extends BLangNodeVisitor {
         }
         BInvokableType type = new BInvokableType(paramTypes, retType, null);
 
-        BIRFunction birFunc = new BIRFunction(currentIns.pos, funcName, funcName, parentFunc.flags, type,
+        BIRFunction birFunc = new BIRFunction(parentFunc.pos, funcName, funcName, parentFunc.flags, type,
                 parentFunc.workerName, 0, parentFunc.origin);
 
         List<BIRFunctionParameter> functionParams = new ArrayList<>();
