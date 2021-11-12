@@ -558,6 +558,10 @@ public class BIRGen extends BLangNodeVisitor {
         return currentBB;
     }
 
+    private boolean needToPassVarDclAsArg(BIROperand rhsOp) {
+        return (!rhsOp.variableDcl.ignoreVariable) && (rhsOp.variableDcl.kind != VarKind.GLOBAL) &&
+                (rhsOp.variableDcl.kind != VarKind.CONSTANT);
+    }
 
     private List<Split> getPossibleSplits(List<BIRBasicBlock> basicBlocks) {
         List<Split> possibleSplits = new ArrayList<>();
@@ -585,7 +589,7 @@ public class BIRGen extends BLangNodeVisitor {
                 }
                 BIROperand[] rhsOperands = bbTerminator.getRhsOperands();
                 for (BIROperand rhsOperand : rhsOperands) {
-                    if (!rhsOperand.variableDcl.ignoreVariable) {
+                    if (needToPassVarDclAsArg(rhsOperand)) {
                         neededOperandsVarDcl.add(rhsOperand.variableDcl);
                     }
                 }
@@ -602,7 +606,7 @@ public class BIRGen extends BLangNodeVisitor {
                     BIROperand[] rhsOperands = currIns.getRhsOperands();
                     lhsOperandList.add(currIns.lhsOp.variableDcl);
                     for (BIROperand rhsOperand : rhsOperands) {
-                        if (!rhsOperand.variableDcl.ignoreVariable) {
+                        if (needToPassVarDclAsArg(rhsOperand)) {
                             neededOperandsVarDcl.add(rhsOperand.variableDcl);
                         }
                     }
@@ -654,7 +658,7 @@ public class BIRGen extends BLangNodeVisitor {
                         neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
-                            if (!rhsOperand.variableDcl.ignoreVariable) {
+                            if (needToPassVarDclAsArg(rhsOperand)) {
                                 neededOperandsVarDcl.add(rhsOperand.variableDcl);
                             }
                         }
@@ -673,7 +677,7 @@ public class BIRGen extends BLangNodeVisitor {
                         neededOperandsVarDcl = new HashSet<>();
                         BIROperand[] initialRhsOperands = currIns.getRhsOperands();
                         for (BIROperand rhsOperand : initialRhsOperands) {
-                            if (!rhsOperand.variableDcl.ignoreVariable) {
+                            if (needToPassVarDclAsArg(rhsOperand)) {
                                 neededOperandsVarDcl.add(rhsOperand.variableDcl);
                             }
                         }
