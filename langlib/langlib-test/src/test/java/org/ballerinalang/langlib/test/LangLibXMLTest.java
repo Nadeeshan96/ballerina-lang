@@ -224,16 +224,6 @@ public class LangLibXMLTest {
     }
 
     @Test
-    public void testXMLCycleError() {
-        BValue[] returns = BRunUtil.invoke(compileResult, "testXMLCycleError");
-        assertEquals(returns[0].stringValue(),
-                "{ballerina/lang.xml}XMLOperationError " +
-                        "{\"message\":\"Failed to set children to xml element: Cycle detected\"}");
-        assertTrue(returns[1].stringValue().contains("<CD><CD>"));
-        assertTrue(returns[1].stringValue().contains("</CD></CD>"));
-    }
-
-    @Test
     public void testXMLCycleDueToChildrenOfChildren() {
         BValue[] returns = BRunUtil.invoke(compileResult, "testXMLCycleDueToChildrenOfChildren");
         assertEquals(returns[0].stringValue(),
