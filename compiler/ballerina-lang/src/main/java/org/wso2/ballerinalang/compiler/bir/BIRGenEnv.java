@@ -19,6 +19,7 @@ package org.wso2.ballerinalang.compiler.bir;
 
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRAnnotationAttachment;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRBasicBlock;
+import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRErrorEntry;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRFunction;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRLockDetailsHolder;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRPackage;
@@ -110,13 +111,15 @@ class Split {
     int endBBNum;
     List<BIRVariableDcl> lhsVars;
     List<BIRVariableDcl> funcArgs;
+    List<BIRErrorEntry> errorTableEntries;
     public Split(int firstIns, int lastIns, int startBBNum, int endBBNum, List<BIRVariableDcl> lhsVars,
-                 List<BIRVariableDcl> funcArgs) {
+                 List<BIRVariableDcl> funcArgs, List<BIRErrorEntry> errorTableEntries) {
         this.firstIns = firstIns;
         this.lastIns = lastIns;
         this.startBBNum = startBBNum;
         this.endBBNum = endBBNum;
         this.lhsVars = lhsVars;
         this.funcArgs = funcArgs;
+        this.errorTableEntries = errorTableEntries;
     }
 }

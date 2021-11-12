@@ -36,6 +36,7 @@ import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRAnnotationAttachment
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRAnnotationValue;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRBasicBlock;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRConstant;
+import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRErrorEntry;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRFunction;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRFunctionParameter;
 import org.wso2.ballerinalang.compiler.bir.model.BIRNode.BIRGlobalVariableDcl;
@@ -311,7 +312,7 @@ public class BIRGen extends BLangNodeVisitor {
                 continue;
             }
 
-            List<Split> possibleSplits = getPossibleSplits(function.basicBlocks);
+            List<Split> possibleSplits = getPossibleSplits(function.basicBlocks, function.errorTable);
 
             if (!possibleSplits.isEmpty()) {
                 final List<BIRFunction> newlyAddedFunctions = new ArrayList<>();
@@ -438,6 +439,7 @@ public class BIRGen extends BLangNodeVisitor {
 
             newlyAddedFunctions.add(newBIRFunc);
 //            function.localVars.removeAll(currSplit.lhsVars); // now as it after optimizer can't remove
+            function.errorTable.removeAll(currSplit.errorTableEntries);
             startInsNum = currSplit.lastIns + 1;
             newBBNum += 1;
             BIRBasicBlock newBB = new BIRBasicBlock(new Name("bb" + newBBNum));
@@ -488,6 +490,7 @@ public class BIRGen extends BLangNodeVisitor {
         birFunc.localVars.add(0, birFunc.returnVariable);
         birFunc.localVars.addAll(functionParams);
         birFunc.localVars.addAll(new HashSet<>(currSplit.lhsVars));
+        birFunc.errorTable = currSplit.errorTableEntries;
 
         //creates bbs
         // first bb
@@ -563,13 +566,14 @@ public class BIRGen extends BLangNodeVisitor {
                 (rhsOp.variableDcl.kind != VarKind.CONSTANT);
     }
 
-    private List<Split> getPossibleSplits(List<BIRBasicBlock> basicBlocks) {
+    private List<Split> getPossibleSplits(List<BIRBasicBlock> basicBlocks, List<BIRErrorEntry> errorTableEntries) {
         List<Split> possibleSplits = new ArrayList<>();
         List<BIRVariableDcl> newFuncArgs;
         int maxFuncArgs = 250;
         int splitInstructionThreshold = 1;
         int splitEndBBIndex = basicBlocks.size() - 1;
         int splitEndInsIndex = basicBlocks.get(splitEndBBIndex).instructions.size() - 1;
+        int errTableEntryIndex = errorTableEntries.size() - 1; // goes from end to beginning
         boolean splitStarted = false;
         boolean splitTypeArray = true;
         Set<BIRVariableDcl> neededOperandsVarDcl = new HashSet<>();
@@ -622,8 +626,23 @@ public class BIRGen extends BLangNodeVisitor {
                             for (BIRVariableDcl funcArgVarDcl : neededOperandsVarDcl) {
                                 newFuncArgs.add(funcArgVarDcl);
                             }
+                            // create necessary error table entries
+                            List<BIRErrorEntry> splitErrorTableEntries = new ArrayList<>();
+                            int trapBBNum;
+                            while (errTableEntryIndex >= 0) {
+                                trapBBNum = Integer.parseInt(
+                                        errorTableEntries.get(errTableEntryIndex).trapBB.toString().substring(2));
+                                if (trapBBNum < bbNum) {
+                                    break;
+                                } else if (trapBBNum < splitEndBBIndex) {
+                                    splitErrorTableEntries.add(errorTableEntries.get(errTableEntryIndex));
+                                }
+                                errTableEntryIndex--;
+                            }
+                            Collections.reverse(splitErrorTableEntries);
+
                             possibleSplits.add(new Split(insNum, splitEndInsIndex, bbNum, splitEndBBIndex,
-                                    lhsOperandList, newFuncArgs));
+                                    lhsOperandList, newFuncArgs, splitErrorTableEntries));
                             splitStarted = false;
                         }
 
@@ -640,8 +659,23 @@ public class BIRGen extends BLangNodeVisitor {
                             for (BIRVariableDcl funcArgVarDcl : neededOperandsVarDcl) {
                                 newFuncArgs.add(funcArgVarDcl);
                             }
+                            // create necessary error table entries
+                            List<BIRErrorEntry> splitErrorTableEntries = new ArrayList<>();
+                            int trapBBNum;
+                            while (errTableEntryIndex >= 0) {
+                                trapBBNum = Integer.parseInt(
+                                        errorTableEntries.get(errTableEntryIndex).trapBB.toString().substring(2));
+                                if (trapBBNum < bbNum) {
+                                    break;
+                                } else if (trapBBNum < splitEndBBIndex) {
+                                    splitErrorTableEntries.add(errorTableEntries.get(errTableEntryIndex));
+                                }
+                                errTableEntryIndex--;
+                            }
+                            Collections.reverse(splitErrorTableEntries);
+
                             possibleSplits.add(new Split(insNum, splitEndInsIndex, bbNum, splitEndBBIndex,
-                                    lhsOperandList, newFuncArgs));
+                                    lhsOperandList, newFuncArgs, splitErrorTableEntries));
                             splitStarted = false;
                         }
                     }
