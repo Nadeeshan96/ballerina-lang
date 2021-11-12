@@ -47,11 +47,6 @@ public class BirVariableOptimizationTest {
         result = BCompileUtil.generateBIR("test-src/bir/biroptimizer.bal");
     }
 
-    @Test(description = "Test the liveness analysis on functions")
-    public void testFunctions() {
-         result.getExpectedBIR().functions.forEach(this::assertFunctions);
-    }
-
     @Test(description = "Test the liveness analysis on attached functions")
     public void testAttachedFunctions() {
          result.getExpectedBIR().typeDefs.forEach(
