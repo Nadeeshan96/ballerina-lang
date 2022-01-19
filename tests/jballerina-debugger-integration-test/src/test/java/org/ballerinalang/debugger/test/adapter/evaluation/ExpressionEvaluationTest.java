@@ -53,7 +53,7 @@ public class ExpressionEvaluationTest extends ExpressionEvaluationBaseTest {
         debugTestRunner.assertExpression(context, "-5.0e34f", "-5.0E34", "float");
         debugTestRunner.assertExpression(context, "-30.0d", "-30.0", "decimal");
         debugTestRunner.assertExpression(context, "-40.0D", "-40.0", "decimal");
-        debugTestRunner.assertExpression(context, "-5.0e34d", "-5.0E+34", "decimal");
+        debugTestRunner.assertExpression(context, "-5.0e34d", "-50000000000000000000000000000000000", "decimal");
         // Todo - add following tests after the implementation
         //  - hex float
         //  - string literal
