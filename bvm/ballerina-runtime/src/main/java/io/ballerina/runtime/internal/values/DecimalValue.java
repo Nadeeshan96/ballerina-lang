@@ -253,10 +253,10 @@ public class DecimalValue implements SimpleValue, BDecimal {
      * @param parent The link to the parent node
      */
     public String stringValue(BLink parent) {
-        if (this.valueKind != DecimalValueKind.OTHER) {
+        if (this.valueKind != DecimalValueKind.OTHER && this.valueKind != DecimalValueKind.ZERO) {
             return this.valueKind.getValue();
         }
-        return value.toString();
+        return value.toPlainString();
     }
 
     /**
@@ -265,7 +265,7 @@ public class DecimalValue implements SimpleValue, BDecimal {
      * @param parent The link to the parent node
      */
     public String expressionStringValue(BLink parent) {
-        if (this.valueKind != DecimalValueKind.OTHER) {
+        if (this.valueKind != DecimalValueKind.OTHER && this.valueKind != DecimalValueKind.ZERO) {
             return this.valueKind.getValue() + "d";
         }
         return value.toString() + "d";
