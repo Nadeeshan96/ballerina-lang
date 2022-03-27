@@ -26,6 +26,8 @@ import io.ballerina.runtime.api.types.Parameter;
 import io.ballerina.runtime.api.types.Type;
 
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * {@code {@link BFunctionType }} represents a function type in ballerina.
@@ -59,6 +61,12 @@ public class BFunctionType extends BAnnotatableType implements FunctionType {
         this.restType = restType;
         this.retType = retType;
         this.flags = flags;
+        Logger logger = Logger.getLogger("TestForBFunctionTypeRestParamType");
+        if (restType instanceof BArrayType) {
+            logger.log(Level.INFO, "QWERTY1234 BArray " + restType);
+        } else {
+            logger.log(Level.INFO, "QWERTY1234 NotBArray " + restType);
+        }
     }
 
     public BFunctionType(Parameter[] parameters, Type restType, Type retType, long flags) {
@@ -67,6 +75,12 @@ public class BFunctionType extends BAnnotatableType implements FunctionType {
         this.restType = restType;
         this.retType = retType;
         this.flags = flags;
+        Logger logger = Logger.getLogger("TestForBFunctionTypeRestParamType");
+        if (restType instanceof BArrayType) {
+            logger.log(Level.INFO, "QWERTY1234 BArray " + restType);
+        } else {
+            logger.log(Level.INFO, "QWERTY1234 NotBArray " + restType);
+        }
     }
 
     @Deprecated
