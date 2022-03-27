@@ -62,10 +62,8 @@ public class BFunctionType extends BAnnotatableType implements FunctionType {
         this.retType = retType;
         this.flags = flags;
         Logger logger = Logger.getLogger("TestForBFunctionTypeRestParamType");
-        if (restType instanceof BArrayType) {
-            logger.log(Level.INFO, "QWERTY1234 BArray " + restType);
-        } else {
-            logger.log(Level.INFO, "QWERTY1234 NotBArray " + restType);
+        if ((restType != null) && !(restType instanceof BArrayType)) {
+            logger.log(Level.INFO, "QWERTY1234 " + restType);
         }
     }
 
@@ -76,10 +74,8 @@ public class BFunctionType extends BAnnotatableType implements FunctionType {
         this.retType = retType;
         this.flags = flags;
         Logger logger = Logger.getLogger("TestForBFunctionTypeRestParamType");
-        if (restType instanceof BArrayType) {
-            logger.log(Level.INFO, "QWERTY1234 BArray " + restType);
-        } else {
-            logger.log(Level.INFO, "QWERTY1234 NotBArray " + restType);
+        if ((restType != null) && !(restType instanceof BArrayType)) {
+            logger.log(Level.INFO, "QWERTY1234 " + restType);
         }
     }
 
