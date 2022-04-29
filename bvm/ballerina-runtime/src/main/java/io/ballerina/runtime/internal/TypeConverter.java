@@ -25,7 +25,6 @@ import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.utils.StringUtils;
-import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.utils.XmlUtils;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
@@ -1199,9 +1198,7 @@ public class TypeConverter {
         Type elementType = ((BArrayType) sourceType).getElementType();
 
         if (elementType != null) {
-            if (TypeUtils.isValueType(elementType)) {
-                return false;
-            } else if (elementType instanceof BArrayType) {
+            if (elementType instanceof BArrayType) {
                 return isDeepConversionRequiredForArray(elementType);
             }
             return true;
@@ -1213,9 +1210,7 @@ public class TypeConverter {
         Type constrainedType = ((BMapType) sourceType).getConstrainedType();
 
         if (constrainedType != null) {
-            if (TypeUtils.isValueType(constrainedType)) {
-                return false;
-            } else if (constrainedType instanceof BMapType) {
+            if (constrainedType instanceof BMapType) {
                 return isDeepConversionRequiredForMap(constrainedType);
             }
             return true;

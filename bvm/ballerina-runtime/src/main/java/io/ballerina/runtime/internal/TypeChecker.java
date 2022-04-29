@@ -117,7 +117,6 @@ import static io.ballerina.runtime.api.constants.RuntimeConstants.SIGNED8_MIN_VA
 import static io.ballerina.runtime.api.constants.RuntimeConstants.UNSIGNED16_MAX_VALUE;
 import static io.ballerina.runtime.api.constants.RuntimeConstants.UNSIGNED32_MAX_VALUE;
 import static io.ballerina.runtime.api.constants.RuntimeConstants.UNSIGNED8_MAX_VALUE;
-import static io.ballerina.runtime.api.utils.TypeUtils.isValueType;
 
 /**
  * Responsible for performing runtime type checking.
@@ -2483,7 +2482,6 @@ public class TypeChecker {
         Type targetTypeElementType = targetType.getElementType();
         if (source.getType().getTag() == TypeTags.ARRAY_TAG) {
             Type sourceElementType = ((BArrayType) source.getType()).getElementType();
-            if (isValueType(sourceElementType)) {
 
                 if (checkIsType(sourceElementType, targetTypeElementType, new ArrayList<>())) {
                     return true;
@@ -2511,7 +2509,6 @@ public class TypeChecker {
                         targetTypeElementType.getTag() == TypeTags.DECIMAL_TAG) {
                     return false;
                 }
-            }
         }
 
         int sourceSize = source.size();
@@ -2557,8 +2554,8 @@ public class TypeChecker {
         if (sourceType.getTag() == TypeTags.ARRAY_TAG) {
             ArrayValue source = (ArrayValue) sourceValue;
             Type elementType = ((BArrayType) source.getType()).getElementType();
-            if (isValueType(elementType)) {
-                return checkIsType(elementType, targetType, new ArrayList<>());
+            if (checkIsType(elementType, targetType, new ArrayList<>())) {
+                return true;
             }
 
             Object[] arrayValues = source.getValues();
@@ -3283,7 +3280,7 @@ public class TypeChecker {
             }
         }
         // Control reaching this point means there is only one type in the union.
-        return isValueType(firstMember) && hasFillerValue(firstMember);
+        return hasFillerValue(firstMember);
     }
 
     private static boolean checkFillerValue(BRecordType type, List<Type> unAnalyzedTypes) {
