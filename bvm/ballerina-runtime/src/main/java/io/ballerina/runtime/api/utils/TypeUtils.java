@@ -51,21 +51,32 @@ import static io.ballerina.runtime.api.PredefinedTypes.TYPE_XML_ATTRIBUTES;
 public class TypeUtils {
 
     public static boolean isValueType(Type type) {
-        if (type == TYPE_INT || type == TYPE_BYTE ||
-                type == TYPE_FLOAT ||
-                type == TYPE_DECIMAL || type == TYPE_STRING ||
-                type == TYPE_BOOLEAN) {
-            return true;
-        }
-
-        if (type != null && type.getTag() == TypeTags.FINITE_TYPE_TAG) {
-            // All the types in value space should be value types.
-            for (Object value : ((BFiniteType) type).valueSpace) {
-                if (!isValueType(TypeChecker.getType(value))) {
+        if (type != null) {
+            switch (type.getTag()) {
+                case TypeTags.BOOLEAN_TAG:
+                case TypeTags.BYTE_TAG:
+                case TypeTags.DECIMAL_TAG:
+                case TypeTags.FLOAT_TAG:
+                case TypeTags.INT_TAG:
+                case TypeTags.STRING_TAG:
+                case TypeTags.SIGNED32_INT_TAG:
+                case TypeTags.SIGNED16_INT_TAG:
+                case TypeTags.SIGNED8_INT_TAG:
+                case TypeTags.UNSIGNED32_INT_TAG:
+                case TypeTags.UNSIGNED16_INT_TAG:
+                case TypeTags.UNSIGNED8_INT_TAG:
+                case TypeTags.CHAR_STRING_TAG:
+                    return true;
+                case TypeTags.FINITE_TYPE_TAG:
+                    for (Object value : ((BFiniteType) type).valueSpace) {
+                        if (!isValueType(TypeChecker.getType(value))) {
+                            return false;
+                        }
+                    }
+                    return true;
+                default:
                     return false;
-                }
             }
-            return true;
         }
         return false;
     }
