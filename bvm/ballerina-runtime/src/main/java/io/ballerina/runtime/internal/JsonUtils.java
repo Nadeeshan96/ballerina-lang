@@ -352,11 +352,11 @@ public class JsonUtils {
                     } else if (TypeConverter.isIntegerSubtypeAndConvertible(jsonValue, memType)) {
                         return jsonNodeToInt(jsonValue);
                     } else {
-                        Set<Type> newNumericTypeSet = new HashSet<>();
+                        Set<Type> implicitTargetTypes = new HashSet<>();
                         Set<Type> convertibleTypesForUnionMember = TypeConverter.getConvertibleTypes(jsonValue, memType,
-                                null, true, new ArrayList<>(), new ArrayList<>(), false, newNumericTypeSet);
-                        if (newNumericTypeSet.size() == 1) {
-                            return convertJSON(jsonValue, newNumericTypeSet.iterator().next());
+                                null, true, new ArrayList<>(), new ArrayList<>(), false, implicitTargetTypes);
+                        if (implicitTargetTypes.size() == 1) {
+                            return convertJSON(jsonValue, implicitTargetTypes.iterator().next());
                         } else {
                             matchingTypes.addAll(convertibleTypesForUnionMember);
                         }
