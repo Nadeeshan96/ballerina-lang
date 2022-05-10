@@ -48,7 +48,6 @@ import io.ballerina.runtime.internal.util.exceptions.RuntimeErrors;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -99,7 +98,7 @@ public class FromJsonWithType {
 
         List<String> errors = new ArrayList<>();
         List<Type> convertibleTypes = TypeConverter.getConvertibleTypesFromJson(value, targetType,
-                null, new ArrayList<>(), errors, new HashSet<>());
+                null, new ArrayList<>(), errors, null);
         if (convertibleTypes.isEmpty()) {
             throw CloneUtils.createConversionError(value, targetType, errors);
         }

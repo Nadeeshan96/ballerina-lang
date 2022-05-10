@@ -123,16 +123,4 @@ public class TypeTags {
         }
         return false;
     }
-
-    public static boolean isUnionTypeTag(int tag) {
-        switch (tag) {
-            case UNION_TAG:
-            case ANYDATA_TAG:
-            case JSON_TAG:
-            case ANY_TAG:
-                return true;
-            default:
-                return false;
-        }
-    }
 }

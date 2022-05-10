@@ -352,8 +352,14 @@ public class JsonUtils {
                     } else if (TypeConverter.isIntegerSubtypeAndConvertible(jsonValue, memType)) {
                         return jsonNodeToInt(jsonValue);
                     } else {
-                        matchingTypes.addAll(TypeConverter.getConvertibleTypes(jsonValue, memType, null,
-                                true, new ArrayList<>(), new ArrayList<>(), false, new HashSet<>(), targetType));
+                        Set<Type> newNumericTypeSet = new HashSet<>();
+                        Set<Type> convertibleTypesForUnionMember = TypeConverter.getConvertibleTypes(jsonValue, memType,
+                                null, true, new ArrayList<>(), new ArrayList<>(), false, newNumericTypeSet);
+                        if (newNumericTypeSet.size() == 1) {
+                            return convertJSON(jsonValue, newNumericTypeSet.iterator().next());
+                        } else {
+                            matchingTypes.addAll(convertibleTypesForUnionMember);
+                        }
                     }
                 }
                 if (((matchingTypes.size() > 1) && !matchingTypes.contains(inputValueType) &&
