@@ -399,7 +399,6 @@ public class BIRTypeWriter implements TypeVisitor {
 
         BTypeDefinitionSymbol typDefSymbol = tsymbol.typeDefinitionSymbol;
         buff.writeInt(addStringCPEntry(Objects.requireNonNullElse(typDefSymbol, tsymbol).name.value));
-        buff.writeLong(tsymbol.flags);
 
         buff.writeBoolean(bRecordType.sealed);
         writeTypeCpIndex(bRecordType.restFieldType);

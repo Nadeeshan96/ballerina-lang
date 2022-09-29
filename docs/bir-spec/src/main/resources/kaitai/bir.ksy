@@ -451,8 +451,6 @@ types:
         type: s4
       - id: name_cp_index
         type: s4
-      - id: symbol_flags
-        type: s8
       - id: is_sealed
         type: u1
       - id: rest_field_type_cp_index

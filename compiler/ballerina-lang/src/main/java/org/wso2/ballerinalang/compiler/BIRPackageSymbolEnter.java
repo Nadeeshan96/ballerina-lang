@@ -1255,8 +1255,7 @@ public class BIRPackageSymbolEnter {
                     PackageID pkgId = getPackageId(pkgCpIndex);
 
                     String recordName = getStringCPEntryValue(inputStream);
-                    long tSymbolFlags = inputStream.readLong();
-                    BRecordTypeSymbol recordSymbol = Symbols.createRecordSymbol(tSymbolFlags,
+                    BRecordTypeSymbol recordSymbol = Symbols.createRecordSymbol(Flags.asMask(EnumSet.of(Flag.PUBLIC)),
                             names.fromString(recordName), env.pkgSymbol.pkgID, null, env.pkgSymbol, symTable.builtinPos,
                             COMPILED_SOURCE);
                     recordSymbol.scope = new Scope(recordSymbol);
