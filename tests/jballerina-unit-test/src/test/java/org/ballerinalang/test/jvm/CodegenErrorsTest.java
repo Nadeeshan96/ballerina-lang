@@ -22,7 +22,10 @@ import org.ballerinalang.test.BCompileUtil;
 import org.ballerinalang.test.BRunUtil;
 import org.ballerinalang.test.CompileResult;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.io.PrintStream;
 
 /**
  * Test cases to cover scenarios where backend-jvm code generates errors.
@@ -31,6 +34,18 @@ import org.testng.annotations.Test;
  */
 @Test
 public class CodegenErrorsTest {
+
+    private static final PrintStream console = System.out;
+
+    @BeforeClass(alwaysRun = true)
+    public void setup() {
+        console.println("heeeeeeeaaaaaaaaaaap");
+        long heapSize = Runtime.getRuntime().totalMemory();
+        console.println(heapSize / (1024 * 1024));
+        long heapMaxSize = Runtime.getRuntime().maxMemory();
+        console.println(heapMaxSize / (1024 * 1024));
+        console.println("heeeeeeeaaaaaaaaaaap");
+    }
 
     @Test
     public void testTooLargeMethod() {
@@ -85,8 +100,18 @@ public class CodegenErrorsTest {
 
     @Test
     public void testTooLargeHardCodedStringValue() {
+        console.println("heeeeeeeaaaaaaaaaaap");
+        long heapSize = Runtime.getRuntime().totalMemory();
+        console.println(heapSize / (1024 * 1024));
+        long heapMaxSize = Runtime.getRuntime().maxMemory();
+        console.println(heapMaxSize / (1024 * 1024));
         CompileResult result = BCompileUtil.compile("test-src/jvm/largeStringConstants");
         Assert.assertEquals(result.getErrorCount(), 0);
         BRunUtil.invoke(result, "main");
+        heapSize = Runtime.getRuntime().totalMemory();
+        console.println(heapSize / (1024 * 1024));
+        heapMaxSize = Runtime.getRuntime().maxMemory();
+        console.println(heapMaxSize / (1024 * 1024));
+        console.println("heeeeeeeaaaaaaaaaaap");
     }
 }
