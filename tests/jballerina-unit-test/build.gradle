@@ -84,7 +84,7 @@ test {
     systemProperty "java.util.logging.config.file", "src/test/resources/logging.properties"
     systemProperty "enableJBallerinaTests", "true"
 
-    jvmArgs = ['-Xms512m', '-Xmx3096m']
+    jvmArgs = ['-Xms1g', '-Xmx3g']
 
     useTestNG() {
         suites 'src/test/resources/testng.xml'
