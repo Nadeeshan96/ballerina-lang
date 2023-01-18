@@ -56,6 +56,7 @@ import io.ballerina.runtime.internal.values.RefValue;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -345,7 +346,8 @@ public class JsonInternalUtils {
                 return jsonValue;
             case TypeTags.UNION_TAG:
                 matchingType = TypeConverter.getConvertibleTypeInTargetUnionType(jsonValue,
-                        (BUnionType) targetType, null, new ArrayList<>(), new HashSet<>(), true);
+                        (BUnionType) targetType, null, new ArrayList<>(), new HashSet<>(), true,
+                        new HashMap<>());
                 if (matchingType == null) {
                     throw BLangExceptionHelper.getRuntimeException(RuntimeErrors.INCOMPATIBLE_TYPE, targetType,
                             getTypeName(jsonValue));
@@ -353,7 +355,7 @@ public class JsonInternalUtils {
                 return convertJSON(jsonValue, matchingType);
             case TypeTags.FINITE_TYPE_TAG:
                 matchingType = TypeConverter.getConvertibleFiniteType(jsonValue, (BFiniteType) targetType,
-                        null, new ArrayList<>(), new HashSet<>(), true);
+                        null, new ArrayList<>(), new HashSet<>(), true, new HashMap<>());
                 if (matchingType == null) {
                     throw BLangExceptionHelper.getRuntimeException(RuntimeErrors.INCOMPATIBLE_TYPE, targetType,
                             getTypeName(jsonValue));

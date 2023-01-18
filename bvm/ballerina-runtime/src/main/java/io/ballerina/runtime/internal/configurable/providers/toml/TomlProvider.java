@@ -640,7 +640,7 @@ public class TomlProvider implements ConfigProvider {
         List<Type> convertibleTypes = new ArrayList<>();
         for (Type type : unionType.getMemberTypes()) {
             Type convertibleType = TypeConverter.getConvertibleType(balValue, type, variableName,
-                    new HashSet<>(), new ArrayList<>(), false);
+                    new HashSet<>(), new ArrayList<>(), false, new HashMap<>());
             if (convertibleType != null) {
                 convertibleTypes.add(convertibleType);
             }

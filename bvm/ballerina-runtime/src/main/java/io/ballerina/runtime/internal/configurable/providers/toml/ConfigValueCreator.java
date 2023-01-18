@@ -376,7 +376,7 @@ public class ConfigValueCreator {
         Type convertibleType = null;
         for (Type type : unionType.getMemberTypes()) {
             convertibleType = TypeConverter.getConvertibleType(balValue, type, null, new HashSet<>(),
-                    new ArrayList<>(), false);
+                    new ArrayList<>(), false, new HashMap<>());
             if (convertibleType != null) {
                 break;
             }
