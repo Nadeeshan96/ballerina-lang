@@ -2281,7 +2281,7 @@ public class TypeChecker {
                 return checkIsLikeErrorType(sourceValue, (BErrorType) targetType, unresolvedValues,
                                             allowNumericConversion);
             case TypeTags.ANYDATA_TAG:
-                return checkIsLikeAnydataType(sourceValue, sourceType, unresolvedValues, allowNumericConversion);
+                return sourceType.isAnydata();
             case TypeTags.FINITE_TYPE_TAG:
                 return checkFiniteTypeAssignable(sourceValue, sourceType, (BFiniteType) targetType,
                  unresolvedValues, allowNumericConversion);
@@ -2447,63 +2447,6 @@ public class TypeChecker {
     }
     public static boolean isNumericType(Type type) {
         return type.getTag() < TypeTags.STRING_TAG || TypeTags.isIntegerTypeTag(type.getTag());
-    }
-
-    private static boolean checkIsLikeAnydataType(Object sourceValue, Type sourceType,
-                                                  List<TypeValuePair> unresolvedValues,
-                                                  boolean allowNumericConversion) {
-        if (sourceType.isAnydata()) {
-            return true;
-        }
-
-        switch (sourceType.getTag()) {
-            case TypeTags.RECORD_TYPE_TAG:
-            case TypeTags.JSON_TAG:
-            case TypeTags.MAP_TAG:
-                return isLikeType(((MapValueImpl) sourceValue).values().toArray(), TYPE_ANYDATA,
-                        unresolvedValues, allowNumericConversion);
-            case TypeTags.TABLE_TAG:
-                return isLikeType(((TableValueImpl) sourceValue).values().toArray(), TYPE_ANYDATA,
-                        unresolvedValues, allowNumericConversion);
-            case TypeTags.ARRAY_TAG:
-                ArrayValue arr = (ArrayValue) sourceValue;
-                BArrayType arrayType = (BArrayType) arr.getType();
-                switch (arrayType.getElementType().getTag()) {
-                    case TypeTags.INT_TAG:
-                    case TypeTags.FLOAT_TAG:
-                    case TypeTags.DECIMAL_TAG:
-                    case TypeTags.STRING_TAG:
-                    case TypeTags.BOOLEAN_TAG:
-                    case TypeTags.BYTE_TAG:
-                        return true;
-                    default:
-                        return isLikeType(arr.getValues(), TYPE_ANYDATA, unresolvedValues,
-                                          allowNumericConversion);
-                }
-            case TypeTags.TUPLE_TAG:
-                return isLikeType(((ArrayValue) sourceValue).getValues(), TYPE_ANYDATA, unresolvedValues,
-                                  allowNumericConversion);
-            case TypeTags.ANYDATA_TAG:
-                return true;
-            // TODO: 8/13/19 Check if can be removed
-            case TypeTags.FINITE_TYPE_TAG:
-            case TypeTags.UNION_TAG:
-                return checkIsLikeType(null, sourceValue, TYPE_ANYDATA, unresolvedValues,
-                        allowNumericConversion, null);
-            default:
-                return false;
-        }
-    }
-
-    private static boolean isLikeType(Object[] objects, Type targetType, List<TypeValuePair> unresolvedValues,
-                                      boolean allowNumericConversion) {
-        for (Object value : objects) {
-            if (!checkIsLikeType(null, value, targetType, unresolvedValues, allowNumericConversion,
-                    null)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static boolean checkIsLikeTupleType(Object sourceValue, BTupleType targetType,
