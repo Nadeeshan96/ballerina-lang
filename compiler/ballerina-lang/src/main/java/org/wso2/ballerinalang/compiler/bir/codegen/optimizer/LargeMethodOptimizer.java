@@ -58,9 +58,9 @@ public class LargeMethodOptimizer {
 
     private final SymbolTable symbolTable;
     // splits are done only if the original function has more instructions than the below number
-    private static final int FUNCTION_INSTRUCTION_COUNT_THRESHOLD = 1000;
+    private static final int FUNCTION_INSTRUCTION_COUNT_THRESHOLD = 2;
     // splits are done only if the newly created method will contain more instructions than the below number
-    private static final int SPLIT_INSTRUCTION_COUNT_THRESHOLD = 50;
+    private static final int SPLIT_INSTRUCTION_COUNT_THRESHOLD = 2;
     // splits are done only if the newly created method will have less function arguments than the below number
     private static final int MAX_SPLIT_FUNCTION_ARG_COUNT = 250;
     // current BIR package id
@@ -236,7 +236,8 @@ public class LargeMethodOptimizer {
                         // if the split will have all the available instructions already in the function -
                         // no need to make that split, avoids doing the same split repeatedly
                         if ((bbNum == basicBlocks.size() - 2) && (!basicBlocks.get(0).instructions.isEmpty()) &&
-                                (basicBlocks.get(0).instructions.get(0).lhsOp == splitStartOperand)) {
+                                (basicBlocks.get(0).instructions.get(0).lhsOp == splitStartOperand)
+                                && (insNum == instructions.size() - 1)) {
                             continue;
                         }
 
