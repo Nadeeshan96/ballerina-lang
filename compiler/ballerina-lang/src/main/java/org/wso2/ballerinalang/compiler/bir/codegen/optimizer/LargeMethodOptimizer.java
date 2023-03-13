@@ -289,7 +289,8 @@ public class LargeMethodOptimizer {
         int startInsNum = 0; // start instruction index
         int bbNum = 0; // ongoing BB index
         int newBBNum = getBbIdNum(basicBlocks, basicBlocks.size() - 1); // used for newly created BB's id
-        BIRBasicBlock currentBB  = new BIRBasicBlock(new Name("bb" + getBbIdNum(basicBlocks, bbNum)));
+        BIRBasicBlock currentBB  = possibleSplits.get(splitNum).startBBNum == 0
+                ? replaceExistingBBAndGetCurrentBB(basicBlocks, bbNum) : null;
         Map<String, String> changedLocalVarStartBB = new HashMap<>(); // key: oldBBId, value: newBBId
         Map<String, String> changedLocalVarEndBB = new HashMap<>(); // key: oldBBId, value: newBBId
 
@@ -308,7 +309,7 @@ public class LargeMethodOptimizer {
                     for (; bbNum < possibleSplits.get(splitNum).startBBNum; bbNum++) {
                         newBBList.add(basicBlocks.get(bbNum));
                     }
-                    currentBB = new BIRBasicBlock(new Name("bb" + getBbIdNum(basicBlocks, bbNum)));
+                    currentBB = replaceExistingBBAndGetCurrentBB(basicBlocks, bbNum);
                     continue;
                 }
             } else if (splitNum >= possibleSplits.size()) {
@@ -361,7 +362,11 @@ public class LargeMethodOptimizer {
                 changedLocalVarEndBB.put(basicBlocks.get(bbNum).id.value, currentBB.id.value);
                 startInsNum = 0;
                 bbNum += 1;
-                currentBB = new BIRBasicBlock(new Name("bb" + getBbIdNum(basicBlocks, bbNum)));
+                if (splitNum < possibleSplits.size() && (possibleSplits.get(splitNum).startBBNum == bbNum)) {
+                    currentBB = replaceExistingBBAndGetCurrentBB(basicBlocks, bbNum);
+                } else {
+                    currentBB = null;
+                }
                 continue;
             }
 
@@ -422,6 +427,17 @@ public class LargeMethodOptimizer {
         // unused temp and synthetic vars in the original function are removed
         // and onlyUsedInSingleBB flag in BIRVariableDcl is changed in needed places
         removeUnusedVarsAndSetVarUsage(function);
+    }
+
+    private BIRBasicBlock replaceExistingBBAndGetCurrentBB(List<BIRBasicBlock> basicBlocks, int bbNum) {
+        BIRBasicBlock currentBB = basicBlocks.get(bbNum);
+        BIRBasicBlock newCurrentBB = new BIRBasicBlock(new Name("bb" + getBbIdNum(basicBlocks, bbNum)));
+        newCurrentBB.instructions = currentBB.instructions;
+        newCurrentBB.terminator = currentBB.terminator;
+        basicBlocks.set(bbNum, newCurrentBB);
+        currentBB.terminator = null;
+        currentBB.instructions = new ArrayList<>();
+        return currentBB;
     }
 
     private BType createErrorUnionReturnType(BType newFuncReturnType) {
