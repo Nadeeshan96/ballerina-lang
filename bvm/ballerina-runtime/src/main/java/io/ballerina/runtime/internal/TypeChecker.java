@@ -162,6 +162,7 @@ public class TypeChecker {
         throw createTypeCastError(sourceVal, targetType, errors);
     }
 
+    // any to bal types methods
     public static long anyToInt(Object sourceVal) {
         return TypeConverter.anyToIntCast(sourceVal,
                 () -> ErrorUtils.createTypeCastError(sourceVal, TYPE_INT));
