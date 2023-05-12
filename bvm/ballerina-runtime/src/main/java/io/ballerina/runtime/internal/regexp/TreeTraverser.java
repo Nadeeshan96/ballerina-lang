@@ -17,7 +17,8 @@
  */
 package io.ballerina.runtime.internal.regexp;
 
-import io.ballerina.runtime.internal.util.exceptions.BallerinaException;
+import io.ballerina.runtime.api.creators.ErrorCreator;
+import io.ballerina.runtime.api.utils.StringUtils;
 
 import java.util.ArrayDeque;
 
@@ -92,14 +93,14 @@ public class TreeTraverser {
             case Terminals.DOLLAR:
                 // Cannot have insertions.
                 if (this.reader.peek(1) == Terminals.OPEN_BRACE) {
-                    throw new BallerinaException("Invalid insertion with ${");
+                    throw ErrorCreator.createError(StringUtils.fromString("Invalid insertion with ${"));
                 }
                 break;
             case Terminals.PIPE:
                 reader.advance();
                 // Pipe cannot be the end of the regular expression.
                 if (this.reader.isEOF()) {
-                    throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+                    throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
                 }
                 return getRegExpToken(TokenKind.PIPE_TOKEN);
             default:
@@ -158,7 +159,7 @@ public class TreeTraverser {
                     switchMode(ParserMode.RE_QUANTIFIER);
                     return getRegExpToken(TokenKind.CLOSE_PAREN_TOKEN);
                 }
-                throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+                throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
             default:
                 // Handle ReLiteralChar.
                 this.reader.advance();
@@ -166,7 +167,7 @@ public class TreeTraverser {
                     startMode(ParserMode.RE_QUANTIFIER);
                     return getRegExpText(TokenKind.RE_CHAR);
                 }
-                throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+                throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
         }
     }
 
@@ -326,13 +327,13 @@ public class TreeTraverser {
     private void processReUnicodePropertyValue() {
         if (!isReUnicodePropertyValueChar(peek())) {
             this.reader.advance();
-            throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+            throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
         }
 
         while (!isEndOfUnicodePropertyEscape()) {
             if (!isReUnicodePropertyValueChar(peek())) {
                 this.reader.advance();
-                throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+                throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
             }
             this.reader.advance();
         }
@@ -680,7 +681,7 @@ public class TreeTraverser {
         }
 
         if (!isDigit(peek())) {
-            throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+            throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
         }
 
         this.reader.advance();
@@ -729,7 +730,7 @@ public class TreeTraverser {
         }
 
         if (!isReFlag(peek())) {
-            throw new BallerinaException("invalid flag in regular expression");
+            throw ErrorCreator.createError(StringUtils.fromString("invalid flag in regular expression"));
         }
 
         this.reader.advance();
@@ -785,7 +786,7 @@ public class TreeTraverser {
         }
         // Invalid ReEscape.
         this.reader.advance(2);
-        throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+        throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
     }
 
     private void processNumericEscape() {
@@ -794,7 +795,7 @@ public class TreeTraverser {
 
         // Process code-point.
         if (!isHexDigit(this.reader.peek())) {
-            throw new BallerinaException();
+            throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
         }
 
         reader.advance();
@@ -803,7 +804,7 @@ public class TreeTraverser {
         }
         
         if (this.reader.peek() != Terminals.CLOSE_BRACE) {
-            throw new BallerinaException(errorMsgStart + getMarkedChars() + "'");
+            throw ErrorCreator.createError(StringUtils.fromString(errorMsgStart + getMarkedChars() + "'"));
         }
 
         this.reader.advance();

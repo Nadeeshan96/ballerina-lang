@@ -17,7 +17,8 @@
  */
 package io.ballerina.runtime.internal.regexp;
 
-import io.ballerina.runtime.internal.util.exceptions.BallerinaException;
+import io.ballerina.runtime.api.creators.ErrorCreator;
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.internal.values.RegExpAssertion;
 import io.ballerina.runtime.internal.values.RegExpAtom;
 import io.ballerina.runtime.internal.values.RegExpAtomQuantifier;
@@ -179,7 +180,7 @@ public class TreeBuilder {
             Token unicodePropertyValue = consume();
             return scriptStart.value + unicodePropertyValue.value;
         }
-        throw new BallerinaException(getErrorMsg(nextToken));
+        throw ErrorCreator.createError(StringUtils.fromString(getErrorMsg(nextToken)));
     }
 
     private String readRegUnicodeGeneralCategory() {
@@ -194,7 +195,7 @@ public class TreeBuilder {
             generalCategory = consume();
             return scriptStart != null ? scriptStart.value + generalCategory.value : generalCategory.value;
         }
-        throw new BallerinaException(getErrorMsg(nextToken));
+        throw ErrorCreator.createError(StringUtils.fromString(getErrorMsg(nextToken)));
     }
 
     private String readRegQuoteEscape(String backSlash) {
@@ -214,7 +215,7 @@ public class TreeBuilder {
         RegExpCharSet characterSet = readRegCharSet();
         String characterClassEnd = readCharacterClassEnd();
         if (negation.isEmpty() && characterSet.getCharSetAtoms().length == 0) {
-            throw new BallerinaException("Empty character class disallowed");
+            throw ErrorCreator.createError(StringUtils.fromString("Empty character class disallowed"));
         }
         return new RegExpCharacterClass(characterClassStart, negation, characterSet, characterClassEnd);
     }
@@ -292,7 +293,7 @@ public class TreeBuilder {
             Token consumedToken = consume();
             return consumedToken.value;
         }
-        throw new BallerinaException("Missing ']' character");
+        throw ErrorCreator.createError(StringUtils.fromString("Missing ']' character"));
     }
 
     private RegExpQuantifier readReQuantifier() {
@@ -339,7 +340,7 @@ public class TreeBuilder {
             Token consumedToken = consume();
             return consumedToken.value;
         }
-        throw new BallerinaException("Missing '}' character");
+        throw ErrorCreator.createError(StringUtils.fromString("Missing '}' character"));
     }
     
     private String readNonGreedyChar() {
@@ -412,7 +413,7 @@ public class TreeBuilder {
             Token consumedToken = consume();
             return consumedToken.value;
         }
-        throw new BallerinaException("Missing ')' character");
+        throw ErrorCreator.createError(StringUtils.fromString("Missing ')' character"));
     }
     
     private boolean isEndOfReDisjunction(TokenKind kind) {
@@ -486,7 +487,7 @@ public class TreeBuilder {
         for (int i = 0; i < flags.length(); i++) {
             char flag = flags.charAt(i);
             if (charList.contains(flag)) {
-                throw new BallerinaException("duplicate flag '" + flag + "'");
+                throw ErrorCreator.createError(StringUtils.fromString("duplicate flag '" + flag + "'"));
             }
             charList.add(flag);
         }
