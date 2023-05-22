@@ -24,14 +24,14 @@ public class LogLeecher {
 
     private LeecherType leecherType = LeecherType.INFO;
 
-    public String text;
+    private final String text;
 
     private boolean textFound = false;
 
     private boolean forcedExit = false;
 
     /**
-     * Initializes the Leecher with expected log.
+     * Initializes the Leecher with expected regular expression log.
      *
      * @param text The log line expected
      */
@@ -40,7 +40,7 @@ public class LogLeecher {
     }
 
     /**
-     * Initializes the Leecher with expected log.
+     * Initializes the Leecher with expected regular expression log.
      *
      * @param text The log line expected
      * @param leecherType type of the log leecher
@@ -56,13 +56,14 @@ public class LogLeecher {
     public boolean isTextFound() {
         return textFound;
     }
+
     /**
-     * Feed a log line to check if it matches the expected text.
+     * Feed a log line to check if it matches the expected regular expression.
      *
      * @param logLine The log line which was read
      */
     void feedLine(String logLine) {
-        if (logLine.contains(text)) {
+        if (logLine.matches(text)) {
             textFound = true;
             synchronized (this) {
                 this.notifyAll();
