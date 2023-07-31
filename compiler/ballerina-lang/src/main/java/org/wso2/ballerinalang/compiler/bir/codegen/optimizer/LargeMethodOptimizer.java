@@ -198,16 +198,13 @@ public class LargeMethodOptimizer {
                 handleArray, handleArrayOperand, birOperands, splitFuncEnv, parentFuncEnv, mapValuesOperands,
                 globalAndArgVarKeyOperands, globalAndArgVarKeyConstLoadIns, mapKeyOperandLocations);
 
-        parentFuncEnv.parentFuncNewBBList.get(0).instructions.addAll(globalAndArgVarKeyConstLoadIns);
         setParentFuncDetails(parentFunc, bbs, newMapInsBBNum, parentFuncTempVars, parentFuncEnv, parentFuncStartBB,
-                newLargeMapIns, globalAndArgVarIns);
+                newLargeMapIns);
     }
 
     private void setParentFuncDetails(BIRFunction parentFunc, List<BIRBasicBlock> bbs, int newMapOrArrayInsBBNum,
                                       TempVarsForArraySplit parentFuncTempVars, ParentFuncEnv parentFuncEnv,
-                                      BIRBasicBlock parentFuncStartBB, JInstruction jLargeStructureIns,
-                                      List<BIRNonTerminator> globalAndArgVarIns) {
-        parentFuncEnv.parentFuncNewInsList.addAll(globalAndArgVarIns);
+                                      BIRBasicBlock parentFuncStartBB, JInstruction jLargeStructureIns) {
         parentFuncEnv.parentFuncNewInsList.add(jLargeStructureIns);
         parentFuncEnv.parentFuncNewBB.instructions = parentFuncEnv.parentFuncNewInsList;
         parentFuncEnv.parentFuncNewBB.terminator = bbs.get(newMapOrArrayInsBBNum).terminator;
@@ -275,8 +272,9 @@ public class LargeMethodOptimizer {
                 bbs, newArrayInsBBNum, newArrayInsNumInRelevantBB,
                 handleArray, handleArrayOperand, birOperands, splitFuncEnv, parentFuncEnv, arrayValuesOperands);
 
+        parentFuncEnv.parentFuncNewInsList.addAll(globalAndArgVarIns);
         setParentFuncDetails(parentFunc, bbs, newArrayInsBBNum, parentFuncTempVars, parentFuncEnv, parentFuncStartBB,
-                newLargeArrayIns, globalAndArgVarIns);
+                newLargeArrayIns);
     }
 
     private List<BIRNonTerminator> getGlobalAndArgVarInsForMap(TempVarsForArraySplit parentFuncTempVars,
