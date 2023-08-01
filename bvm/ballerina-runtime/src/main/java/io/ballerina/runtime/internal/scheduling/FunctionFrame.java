@@ -26,6 +26,7 @@ package io.ballerina.runtime.internal.scheduling;
  */
 public abstract class FunctionFrame {
 
+    // yield location
     public String yieldLocation;
 
     public String yieldStatus;
