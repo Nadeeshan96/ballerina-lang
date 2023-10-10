@@ -91,6 +91,16 @@ class ModuleContext {
     private Set<ModuleLoadRequest> allModuleLoadRequests = null;
     private Set<ModuleLoadRequest> allTestModuleLoadRequests = null;
 
+    public void cleanUp() {
+        if (bLangPackage != null) {
+            bLangPackage.functions.clear();
+        }
+        if (bPackageSymbol != null) {
+            bPackageSymbol = null;
+        }
+        birBytes = null;
+    }
+
     ModuleContext(Project project,
                   ModuleId moduleId,
                   ModuleDescriptor moduleDescriptor,
