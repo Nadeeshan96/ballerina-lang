@@ -91,6 +91,12 @@ class ModuleContext {
     private Set<ModuleLoadRequest> allModuleLoadRequests = null;
     private Set<ModuleLoadRequest> allTestModuleLoadRequests = null;
 
+    public void cleanUp() {
+        for (DocumentContext value : srcDocContextMap.values()) {
+            value.cleanUp();
+        }
+    }
+
     ModuleContext(Project project,
                   ModuleId moduleId,
                   ModuleDescriptor moduleDescriptor,

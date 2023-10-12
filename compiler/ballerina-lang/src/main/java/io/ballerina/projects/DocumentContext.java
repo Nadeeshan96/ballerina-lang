@@ -61,6 +61,10 @@ class DocumentContext {
     private final String content;
     private boolean disableSyntaxTree = false;
 
+    public void cleanUp() {
+        textDocument = null;
+    }
+
     private DocumentContext(DocumentId documentId, String name, String content, boolean disableSyntaxTree) {
         this.documentId = documentId;
         this.name = name;
