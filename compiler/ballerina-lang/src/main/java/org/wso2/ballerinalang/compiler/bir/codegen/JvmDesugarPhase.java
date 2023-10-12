@@ -295,7 +295,6 @@ public class JvmDesugarPhase {
                                                 HashMap<String, String> encodedVsInitialIds) {
         replaceEncodedPackageIdentifiers(module.packageID, encodedVsInitialIds);
         replaceEncodedGlobalVariableIdentifiers(module.globalVars, encodedVsInitialIds);
-        replaceEncodedImportedGlobalVariableIdentifiers(module.importedGlobalVarsDummyVarDcls, encodedVsInitialIds);
         replaceEncodedFunctionIdentifiers(module.functions, encodedVsInitialIds);
         replaceEncodedTypeDefIdentifiers(module.typeDefs, encodedVsInitialIds);
     }
@@ -337,12 +336,6 @@ public class JvmDesugarPhase {
                                                           HashMap<String, String> encodedVsInitialIds) {
         for (BIRFunction function : functions) {
             function.name = getInitialIdString(function.name, encodedVsInitialIds);
-            for (BIRNode.BIRVariableDcl localVar : function.localVars) {
-                if (localVar.metaVarName == null) {
-                    continue;
-                }
-                localVar.metaVarName = getInitialIdString(localVar.metaVarName, encodedVsInitialIds);
-            }
             for (BIRNode.BIRParameter parameter : function.requiredParams) {
                 parameter.name = getInitialIdString(parameter.name, encodedVsInitialIds);
             }

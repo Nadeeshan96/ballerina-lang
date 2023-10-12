@@ -101,6 +101,9 @@ public class CodeGenerator {
         // TODO Get-rid of the following assignment
         CompiledJarFile compiledJarFile = jvmPackageGen.generate(packageSymbol.bir, true);
         cleanUpBirPackage(packageSymbol);
+        //Revert encoding identifier names
+        JvmDesugarPhase.replaceEncodedModuleIdentifiers(packageSymbol.bir, originalIdentifierMap);
+
         return compiledJarFile;
     }
 
