@@ -193,5 +193,8 @@ class DocumentContext {
             this.compilationUnit.topLevelNodes.clear();
         }
         this.content = null;
+        if (this.textDocument != null) {
+            this.textDocument.cleanUp();
+        }
     }
 }

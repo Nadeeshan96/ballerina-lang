@@ -34,6 +34,11 @@ class StringTextDocument extends TextDocument {
     }
 
     @Override
+    public void cleanUp() {
+        this.textLineMap = null;
+    }
+
+    @Override
     public TextDocument apply(TextDocumentChange textDocumentChange) {
         int startOffset = 0;
         StringBuilder sb = new StringBuilder();

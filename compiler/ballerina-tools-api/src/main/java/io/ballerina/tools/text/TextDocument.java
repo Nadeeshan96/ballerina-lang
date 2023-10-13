@@ -27,6 +27,8 @@ import java.util.List;
 public abstract class TextDocument {
     private LineMap lineMap;
 
+    public abstract void cleanUp();
+
     public abstract TextDocument apply(TextDocumentChange textDocumentChange);
 
     protected abstract LineMap populateTextLineMap();
