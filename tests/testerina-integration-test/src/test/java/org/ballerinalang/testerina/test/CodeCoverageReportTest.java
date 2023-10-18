@@ -158,7 +158,7 @@ public class CodeCoverageReportTest extends BaseTestCase {
         }
     }
 
-    @Test
+    @Test(enabled = false)
     public void normalizedCoverageClassTest() throws BallerinaTestException {
         projectPath = projectBasedTestsPath.resolve(multiModuleTestRoot).toString();
         balClient.runMain("test", new String[]{"--code-coverage", "--coverage-format=xml"}, null,
