@@ -23,6 +23,8 @@ import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.internal.ValueConverter;
 
+import java.io.InputStream;
+
 /**
  * This class provides APIs needed for the type conversion in Ballerina.
  *
@@ -43,5 +45,18 @@ public class ValueUtils {
      */
     public static Object convert(Object value, Type targetType) throws BError {
         return ValueConverter.convert(value, targetType);
+    }
+
+    /**
+     * Parses the given input stream and create a value which is a subtype of {@link AnydataType}
+     * given by the target type.
+     *
+     * @param   in          input stream which contains the value content
+     * @param   targetType  target type
+     * @return              converted value
+     * @throws              BError if the conversion fails.
+     */
+    public static Object parse(InputStream in, Type targetType) throws BError {
+        return null;
     }
 }
