@@ -444,6 +444,37 @@ public class ArrayValueImpl extends AbstractArrayValue {
         return (BString) refValues[(int) index];
     }
 
+    // ---------------------------- set methods --------------------------------------------------
+
+    public void set(int index, Object value) {
+        switch (this.elementReferredType.getTag()) {
+            case TypeTags.BOOLEAN_TAG:
+                this.booleanValues[index] = (Boolean) value;
+                return;
+            case TypeTags.FLOAT_TAG:
+                this.floatValues[index] = (Double) value;
+                return;
+            case TypeTags.BYTE_TAG:
+                this.byteValues[index] = ((Number) value).byteValue();
+                return;
+            case TypeTags.INT_TAG:
+            case TypeTags.SIGNED32_INT_TAG:
+            case TypeTags.SIGNED16_INT_TAG:
+            case TypeTags.SIGNED8_INT_TAG:
+            case TypeTags.UNSIGNED32_INT_TAG:
+            case TypeTags.UNSIGNED16_INT_TAG:
+            case TypeTags.UNSIGNED8_INT_TAG:
+                this.intValues[index] = (Long) value;
+                return;
+            case TypeTags.STRING_TAG:
+            case TypeTags.CHAR_STRING_TAG:
+                this.bStringValues[index] = (BString) value;
+                return;
+            default:
+                this.refValues[index] = value;
+        }
+    }
+
     // ---------------------------- add methods --------------------------------------------------
 
     /**
